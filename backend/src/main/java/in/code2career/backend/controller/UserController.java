@@ -1,5 +1,6 @@
 package in.code2career.backend.controller;
 
+import in.code2career.backend.dto.LoginDto;
 import in.code2career.backend.dto.UserDto;
 import in.code2career.backend.entity.User;
 import in.code2career.backend.service.UserService;
@@ -18,4 +19,11 @@ public class UserController {
     public User registerUser(@RequestBody UserDto userDto) {
         return userService.createUser(userDto);
     }
+
+    @PostMapping("/login")
+    public String loginUser(@RequestBody LoginDto loginDto) {
+        return userService.verifyLogin(loginDto);
+    }
+
+
 }

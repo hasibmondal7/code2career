@@ -4,6 +4,7 @@ import in.code2career.backend.dto.LoginDto;
 import in.code2career.backend.dto.UserDto;
 import in.code2career.backend.entity.User;
 import in.code2career.backend.repository.UserRepository;
+import in.code2career.backend.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,10 @@ public class UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    // JwtUtil autowire kora holo
+    @Autowired
+    private JwtUtil jwtUtil;
 
     public User createUser(UserDto userDto) {
         User user = new User();
@@ -34,7 +39,8 @@ public class UserService {
         User user = userRepository.findByEmail(loginDto.getEmail());
 
         if (user != null && passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
-            return "Login Successful";
+            // "Login Successful" er bodole token return kora hochche
+            return jwtUtil.generateToken(user.getEmail());
         }
         return "Invalid Credentials";
     }

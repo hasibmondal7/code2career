@@ -1,29 +1,35 @@
 package in.code2career.backend.controller;
 
+import in.code2career.backend.dto.AuthResponseDto;
 import in.code2career.backend.dto.LoginDto;
 import in.code2career.backend.dto.UserDto;
-import in.code2career.backend.entity.User;
+import in.code2career.backend.dto.UserResponseDto;
+import in.code2career.backend.mapper.UserMapper;
 import in.code2career.backend.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @PostMapping("/register")
-    public User registerUser(@RequestBody UserDto userDto) {
-        return userService.createUser(userDto);
+    public ResponseEntity<UserResponseDto> registerUser(@Valid @RequestBody UserDto userDto) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(UserMapper.mapToResponseDto(userService.createUser(userDto)));
     }
 
     @PostMapping("/login")
-    public String loginUser(@RequestBody LoginDto loginDto) {
-        return userService.verifyLogin(loginDto);
+    public ResponseEntity<AuthResponseDto> loginUser(@Valid @RequestBody LoginDto loginDto) {
+        String accessToken = userService.verifyLogin(loginDto);
+        return ResponseEntity.ok(new AuthResponseDto(accessToken, "Bearer"));
     }
-
-
 }

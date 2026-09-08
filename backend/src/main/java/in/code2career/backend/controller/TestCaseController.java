@@ -1,28 +1,32 @@
 package in.code2career.backend.controller;
 
 import in.code2career.backend.dto.TestCaseDto;
-import in.code2career.backend.entity.TestCase;
+import in.code2career.backend.dto.TestCaseResponseDto;
 import in.code2career.backend.service.TestCaseService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/testcases")
-@CrossOrigin(origins = "http://localhost:5173")
 public class TestCaseController {
 
-    @Autowired
-    private TestCaseService testCaseService;
+    private final TestCaseService testCaseService;
+
+    public TestCaseController(TestCaseService testCaseService) {
+        this.testCaseService = testCaseService;
+    }
 
     @PostMapping
-    public TestCase createTestCase(@RequestBody TestCaseDto dto) {
-        return testCaseService.createTestCase(dto);
+    public ResponseEntity<TestCaseResponseDto> createTestCase(@Valid @RequestBody TestCaseDto dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(testCaseService.createTestCase(dto));
     }
 
     @GetMapping("/problem/{problemId}")
-    public List<TestCase> getTestCasesByProblem(@PathVariable Long problemId) {
+    public List<TestCaseResponseDto> getTestCasesByProblem(@PathVariable Long problemId) {
         return testCaseService.getTestCasesByProblem(problemId);
     }
 }

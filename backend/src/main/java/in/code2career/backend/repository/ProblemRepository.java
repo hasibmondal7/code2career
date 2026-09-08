@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface ProblemRepository extends JpaRepository<Problem, Long> {
-    // Ekta nirdishto topic-er shob problem khuje anar method
+
     List<Problem> findByTopicId(Long topicId);
 }

@@ -1,28 +1,32 @@
 package in.code2career.backend.controller;
 
 import in.code2career.backend.dto.SubmissionDto;
-import in.code2career.backend.entity.Submission;
+import in.code2career.backend.dto.SubmissionResponseDto;
 import in.code2career.backend.service.SubmissionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/submissions")
-@CrossOrigin(origins = "http://localhost:5173")
 public class SubmissionController {
 
-    @Autowired
-    private SubmissionService submissionService;
+    private final SubmissionService submissionService;
+
+    public SubmissionController(SubmissionService submissionService) {
+        this.submissionService = submissionService;
+    }
 
     @PostMapping
-    public Submission submitCode(@RequestBody SubmissionDto dto) {
-        return submissionService.submitCode(dto);
+    public ResponseEntity<SubmissionResponseDto> submitCode(@Valid @RequestBody SubmissionDto dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(submissionService.submitCode(dto));
     }
 
     @GetMapping("/user/{userId}")
-    public List<Submission> getUserSubmissions(@PathVariable Long userId) {
+    public List<SubmissionResponseDto> getUserSubmissions(@PathVariable Long userId) {
         return submissionService.getUserSubmissions(userId);
     }
 }

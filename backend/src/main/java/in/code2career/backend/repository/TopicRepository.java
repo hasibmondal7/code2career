@@ -6,6 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TopicRepository extends JpaRepository<Topic, Long> {
-    // Pore dorkar hole nam diye topic khujar method add korbo
-    Topic findByName(String name);
+
+    boolean existsByNameIgnoreCase(String name);
 }

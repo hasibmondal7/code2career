@@ -1,12 +1,20 @@
 package in.code2career.backend.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import in.code2career.backend.enums.SubmissionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "submissions")
+@Table(
+        name = "submissions",
+        indexes = {
+                @Index(name = "idx_submission_problem", columnList = "problem_id"),
+                @Index(name = "idx_submission_user", columnList = "user_id"),
+                @Index(name = "idx_submission_status", columnList = "status")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,17 +28,20 @@ public class Submission {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String code; // User-er lekha ashol code (jemon: class Solution { ... })
 
-    @Column(nullable = false)
-    private String language; // "java", "cpp", "python"
+    @Column(nullable = false, length = 30)
+    private String language;
 
-    @Column(nullable = false)
-    private String status; // "Pending", "Accepted", "Wrong Answer", "Error"
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private SubmissionStatus status;
 
     private LocalDateTime submittedAt;
 
     @PrePersist
     protected void onCreate() {
-        submittedAt = LocalDateTime.now(); // Database-e save hobar shomoy automatic time set korbe
+        if (submittedAt == null) {
+            submittedAt = LocalDateTime.now();
+        }
     }
 
     // Kon problem-er jonne submit koreche

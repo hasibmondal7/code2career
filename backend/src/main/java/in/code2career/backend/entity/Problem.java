@@ -2,10 +2,17 @@ package in.code2career.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // Eta oboshhoi import korbe
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import in.code2career.backend.enums.Difficulty;
 
 @Entity
-@Table(name = "problems")
+@Table(
+        name = "problems",
+        indexes = {
+                @Index(name = "idx_problem_topic", columnList = "topic_id"),
+                @Index(name = "idx_problem_difficulty", columnList = "difficulty")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -16,14 +23,15 @@ public class Problem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 150)
     private String title;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String description;
 
-    @Column(nullable = false)
-    private String difficulty; // "Easy", "Medium", "Hard"
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Difficulty difficulty;
 
     @Column(columnDefinition = "TEXT")
     private String constraints;
@@ -32,7 +40,7 @@ public class Problem {
     @JoinColumn(name = "topic_id", nullable = false)
     private Topic topic;
 
-    // Admin track korar jonne notun field
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "admin_id")
     @JsonIgnoreProperties({"password", "email", "createdAt", "xp", "level"})

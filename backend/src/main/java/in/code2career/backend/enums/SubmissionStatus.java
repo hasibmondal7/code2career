@@ -6,5 +6,6 @@ public enum SubmissionStatus {
     WRONG_ANSWER,
     COMPILATION_ERROR,
     TIME_LIMIT_EXCEEDED,
-    RUNTIME_ERROR
+    RUNTIME_ERROR,
+    SYSTEM_ERROR
 }

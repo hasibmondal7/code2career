@@ -36,10 +36,11 @@ public class Problem {
     @Column(columnDefinition = "TEXT")
     private String constraints;
 
+    @Column(name = "xp_reward")
+    private Integer xpReward;
     @ManyToOne
     @JoinColumn(name = "topic_id", nullable = false)
     private Topic topic;
-
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "admin_id")

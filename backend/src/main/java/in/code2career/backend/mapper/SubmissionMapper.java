@@ -39,7 +39,8 @@ public final class SubmissionMapper {
                 submission.getStatus(),
                 submission.getSubmittedAt(),
                 submission.getProblem().getId(),
-                submission.getUser().getId()
+                submission.getUser().getId(),
+                submission.getExecutionTimeMs()
         );
     }
 }

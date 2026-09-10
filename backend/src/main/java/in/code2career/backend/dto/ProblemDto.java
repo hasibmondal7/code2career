@@ -23,6 +23,10 @@ public class ProblemDto {
     @Size(max = 10_000, message = "Constraints must not exceed 10000 characters")
     private String constraints;
 
+    @NotNull(message = "XP Reward is required")
+    @Positive(message = "XP Reward must be positive")
+    private Integer xpReward;
+
     @NotNull(message = "Topic ID is required")
     @Positive(message = "Topic ID must be positive")
     private Long topicId;

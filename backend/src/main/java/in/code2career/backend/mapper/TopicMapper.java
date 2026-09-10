@@ -10,20 +10,32 @@ public final class TopicMapper {
     private TopicMapper() {
     }
 
-    public static Topic mapToEntity(TopicDto dto, User adminUser) {
+    public static Topic mapToEntity(TopicDto dto, User addedBy) {
         return Topic.builder()
-                .name(dto.getName().trim())
+                .name(dto.getName())
                 .description(dto.getDescription())
-                .addedBy(adminUser)
+                .addedBy(addedBy)
                 .build();
     }
 
+    public static TopicDto mapToDto(Topic topic) {
+        TopicDto dto = new TopicDto();
+        dto.setName(topic.getName());
+        dto.setDescription(topic.getDescription());
+        return dto;
+    }
+
     public static TopicResponseDto mapToResponseDto(Topic topic) {
+        Long addedById = null;
+        if (topic.getAddedBy() != null) {
+            addedById = topic.getAddedBy().getId();
+        }
+
         return new TopicResponseDto(
                 topic.getId(),
                 topic.getName(),
                 topic.getDescription(),
-                topic.getAddedBy().getId()
+                addedById
         );
     }
 }

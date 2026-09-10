@@ -1,5 +1,6 @@
 package in.code2career.backend.service.impl;
 
+import in.code2career.backend.dto.EvaluationResult;
 import in.code2career.backend.dto.SubmissionDto;
 import in.code2career.backend.dto.SubmissionResponseDto;
 import in.code2career.backend.entity.Problem;
@@ -76,15 +77,17 @@ public class SubmissionServiceImpl implements SubmissionService {
     public void evaluateSubmissionAsync(Long submissionId, String code, Long problemId) {
         try {
             List<TestCase> testCases = testCaseRepository.findByProblemId(problemId);
-            String engineResult = codeEvaluationService.evaluate(code, testCases);
+            EvaluationResult evaluationResult = codeEvaluationService.evaluate(code, testCases);
 
             // Fetch submission again to avoid detached entity issues
             Submission submission = submissionRepository.findById(submissionId).orElseThrow();
-            submission.setStatus(SubmissionStatus.valueOf(engineResult));
+            submission.setStatus(SubmissionStatus.valueOf(evaluationResult.getStatus()));
+            submission.setExecutionTimeMs(evaluationResult.getExecutionTimeMs());
             submissionRepository.save(submission);
         } catch (Exception e) {
             Submission submission = submissionRepository.findById(submissionId).orElseThrow();
             submission.setStatus(SubmissionStatus.SYSTEM_ERROR);
+            submission.setExecutionTimeMs(0L);
             submissionRepository.save(submission);
         }
     }

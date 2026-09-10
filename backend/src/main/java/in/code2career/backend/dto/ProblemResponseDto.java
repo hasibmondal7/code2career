@@ -8,6 +8,7 @@ public record ProblemResponseDto(
         String description,
         Difficulty difficulty,
         String constraints,
+        Integer xpReward,
         Long topicId,
         Long addedByUserId
 ) {

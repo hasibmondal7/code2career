@@ -44,7 +44,7 @@ public class Submission {
         }
     }
 
-    // Kon problem-er jonne submit koreche
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "problem_id", nullable = false)
     private Problem problem;
@@ -55,4 +55,7 @@ public class Submission {
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnoreProperties({"password", "email", "xp", "level", "createdAt"})
     private User user;
+
+    @Column(name = "execution_time_ms")
+    private Long executionTimeMs;
 }

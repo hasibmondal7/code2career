@@ -17,6 +17,7 @@ public final class ProblemMapper {
                 .description(dto.getDescription())
                 .difficulty(dto.getDifficulty())
                 .constraints(dto.getConstraints())
+                .xpReward(dto.getXpReward())
                 .topic(topic)
                 .addedBy(adminUser)
                 .build();
@@ -28,20 +29,28 @@ public final class ProblemMapper {
         dto.setDescription(problem.getDescription());
         dto.setDifficulty(problem.getDifficulty());
         dto.setConstraints(problem.getConstraints());
-        dto.setTopicId(problem.getTopic().getId());
+        dto.setXpReward(problem.getXpReward());
+
+        if (problem.getTopic() != null) {
+            dto.setTopicId(problem.getTopic().getId());
+        }
 
         return dto;
     }
 
     public static ProblemResponseDto mapToResponseDto(Problem problem) {
+        Long topicId = (problem.getTopic() != null) ? problem.getTopic().getId() : null;
+        Long addedById = (problem.getAddedBy() != null) ? problem.getAddedBy().getId() : null;
+
         return new ProblemResponseDto(
                 problem.getId(),
                 problem.getTitle(),
                 problem.getDescription(),
                 problem.getDifficulty(),
                 problem.getConstraints(),
-                problem.getTopic().getId(),
-                problem.getAddedBy().getId()
+                problem.getXpReward(),
+                topicId,
+                addedById
         );
     }
 }

@@ -32,7 +32,7 @@ public class SubmissionController {
     }
 
     @PostMapping("/run")
-    public ResponseEntity<String> runCustomCode(@RequestBody RunCodeDto runCodeDto) {
+    public ResponseEntity<String> runCustomCode(@Valid @RequestBody RunCodeDto runCodeDto) {
         String result = codeEvaluationService.executeCustomInput(
                 runCodeDto.getCode(),
                 runCodeDto.getCustomInput()

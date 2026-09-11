@@ -16,6 +16,7 @@ public final class UserMapper {
                 .password(encodedPassword)
                 .xp(0)
                 .level(1)
+                .currentStreak(0)
                 .build();
     }
 
@@ -26,6 +27,8 @@ public final class UserMapper {
                 user.getEmail(),
                 user.getXp(),
                 user.getLevel(),
+                user.getCurrentStreak(),
+                user.getLastActiveDate(),
                 user.getCreatedAt()
         );
     }

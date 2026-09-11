@@ -1,6 +1,8 @@
 package in.code2career.backend.controller;
 
 import in.code2career.backend.dto.AuthResponseDto;
+import in.code2career.backend.dto.ChangePasswordDto;
+import in.code2career.backend.dto.UserProfileUpdateDto;
 import in.code2career.backend.dto.LoginDto;
 import in.code2career.backend.dto.UserDto;
 import in.code2career.backend.dto.UserResponseDto;
@@ -31,5 +33,23 @@ public class UserController {
     public ResponseEntity<AuthResponseDto> loginUser(@Valid @RequestBody LoginDto loginDto) {
         String accessToken = userService.verifyLogin(loginDto);
         return ResponseEntity.ok(new AuthResponseDto(accessToken, "Bearer"));
+    }
+
+    @PutMapping("/password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordDto changePasswordDto) {
+        userService.changePassword(changePasswordDto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDto> getCurrentUser() {
+        return ResponseEntity.ok(userService.getCurrentUser());
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<UserResponseDto> updateCurrentUser(
+            @Valid @RequestBody UserProfileUpdateDto profileUpdateDto
+    ) {
+        return ResponseEntity.ok(userService.updateCurrentUser(profileUpdateDto));
     }
 }

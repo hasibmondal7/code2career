@@ -60,5 +60,6 @@ public class Submission {
     private Long executionTimeMs;
 
     @Column(name = "xp_awarded")
+    @Builder.Default
     private Boolean xpAwarded = false;
 }

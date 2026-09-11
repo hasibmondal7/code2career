@@ -96,6 +96,7 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setUsername(username);
+        user.setProfilePhoto(profileUpdateDto.getProfilePhoto());
         return UserMapper.mapToResponseDto(userRepository.save(user));
     }
 

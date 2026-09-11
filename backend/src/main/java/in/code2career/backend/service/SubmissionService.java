@@ -10,4 +10,6 @@ public interface SubmissionService {
     SubmissionResponseDto submitCode(SubmissionDto dto);
 
     List<SubmissionResponseDto> getUserSubmissions(Long userId);
+
+    SubmissionResponseDto getSubmission(Long submissionId);
 }

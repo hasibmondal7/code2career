@@ -71,7 +71,13 @@ public class SecurityConfig {
             @Value("${app.cors.allowed-origin:http://localhost:5173}") String allowedOrigin
     ) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigin));
+        configuration.setAllowedOrigins(
+                List.of(allowedOrigin.split(","))
+                        .stream()
+                        .map(String::trim)
+                        .filter(origin -> !origin.isBlank())
+                        .toList()
+        );
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type" ,"Upgrade", "Sec-WebSocket-Key", "Sec-WebSocket-Version"));
         configuration.setExposedHeaders(List.of("Location"));

@@ -100,6 +100,7 @@ Flyway migrations currently include:
 - `V5__create_user_activity.sql`
 - `V6__create_badges.sql`
 - `V7__repair_user_role_data.sql`
+- `V8__normalize_user_xp_column.sql`
 
 ## Documentation and Operations
 

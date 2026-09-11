@@ -32,15 +32,22 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
+    @Builder.Default
     private UserRole role = UserRole.USER;
 
-    @Column(nullable = false)
+    @Column(name = "profile_photo", columnDefinition = "TEXT")
+    private String profilePhoto;
+
+    @Column(name = "xp", nullable = false)
+    @Builder.Default
     private Integer xp = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer level = 1;
 
     @Column(name = "current_streak", nullable = false)
+    @Builder.Default
     private Integer currentStreak = 0;
 
     @Column(name = "last_active_date")

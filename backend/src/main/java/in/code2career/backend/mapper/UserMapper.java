@@ -29,7 +29,9 @@ public final class UserMapper {
                 user.getLevel(),
                 user.getCurrentStreak(),
                 user.getLastActiveDate(),
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getRole(),
+                user.getProfilePhoto()
         );
     }
 }

@@ -33,11 +33,14 @@ public class UserActivity {
     private LocalDate activityDate;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer problemsSolved = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer acceptedSubmissions = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer xpEarned = 0;
 }

@@ -1,5 +1,6 @@
 package in.code2career.backend.dto;
 
+import in.code2career.backend.enums.UserRole;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -11,6 +12,8 @@ public record UserResponseDto(
         Integer level,
         Integer currentStreak,
         LocalDate lastActiveDate,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        UserRole role,
+        String profilePhoto
 ) {
 }

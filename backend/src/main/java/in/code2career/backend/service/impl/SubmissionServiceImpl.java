@@ -77,4 +77,17 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .map(SubmissionMapper::mapToResponseDto)
                 .toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SubmissionResponseDto getSubmission(Long submissionId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmailIgnoreCase(email);
+        Submission submission = submissionRepository.findById(submissionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Submission", "id", submissionId));
+        if (currentUser == null || !submission.getUser().getId().equals(currentUser.getId())) {
+            throw new ForbiddenException("You can only view your own submissions");
+        }
+        return SubmissionMapper.mapToResponseDto(submission);
+    }
 }

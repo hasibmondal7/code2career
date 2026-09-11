@@ -31,6 +31,11 @@ public class SubmissionController {
         return submissionService.getUserSubmissions(userId);
     }
 
+    @GetMapping("/{submissionId}")
+    public SubmissionResponseDto getSubmission(@PathVariable Long submissionId) {
+        return submissionService.getSubmission(submissionId);
+    }
+
     @PostMapping("/run")
     public ResponseEntity<String> runCustomCode(@Valid @RequestBody RunCodeDto runCodeDto) {
         String result = codeEvaluationService.executeCustomInput(

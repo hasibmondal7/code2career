@@ -10,4 +10,7 @@ public class UserProfileUpdateDto {
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     private String username;
+
+    @Size(max = 4000000, message = "Profile photo is too large")
+    private String profilePhoto;
 }

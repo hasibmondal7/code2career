@@ -1,22 +1,18 @@
 package in.code2career.backend.service.impl;
 
-import in.code2career.backend.dto.EvaluationResult;
 import in.code2career.backend.dto.SubmissionDto;
 import in.code2career.backend.dto.SubmissionResponseDto;
 import in.code2career.backend.entity.Problem;
 import in.code2career.backend.entity.Submission;
-import in.code2career.backend.entity.TestCase;
 import in.code2career.backend.entity.User;
 import in.code2career.backend.enums.SubmissionStatus;
 import in.code2career.backend.exception.ResourceNotFoundException;
+import in.code2career.backend.exception.ForbiddenException;
 import in.code2career.backend.mapper.SubmissionMapper;
 import in.code2career.backend.repository.ProblemRepository;
 import in.code2career.backend.repository.SubmissionRepository;
-import in.code2career.backend.repository.TestCaseRepository;
 import in.code2career.backend.repository.UserRepository;
-import in.code2career.backend.service.CodeEvaluationService;
 import in.code2career.backend.service.SubmissionService;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,23 +25,17 @@ public class SubmissionServiceImpl implements SubmissionService {
     private final SubmissionRepository submissionRepository;
     private final ProblemRepository problemRepository;
     private final UserRepository userRepository;
-    private final TestCaseRepository testCaseRepository;
-    private final CodeEvaluationService codeEvaluationService;
     private final AsyncEvaluationRunner asyncEvaluationRunner;
+
     public SubmissionServiceImpl(
             SubmissionRepository submissionRepository,
             ProblemRepository problemRepository,
             UserRepository userRepository,
-            TestCaseRepository testCaseRepository,
-            CodeEvaluationService codeEvaluationService,
             AsyncEvaluationRunner asyncEvaluationRunner
-
     ) {
         this.submissionRepository = submissionRepository;
         this.problemRepository = problemRepository;
         this.userRepository = userRepository;
-        this.testCaseRepository = testCaseRepository;
-        this.codeEvaluationService = codeEvaluationService;
         this.asyncEvaluationRunner = asyncEvaluationRunner;
     }
 
@@ -73,28 +63,15 @@ public class SubmissionServiceImpl implements SubmissionService {
         return SubmissionMapper.mapToResponseDto(submission);
     }
 
-    @Async // This runs in a separate thread pool
-    public void evaluateSubmissionAsync(Long submissionId, String code, Long problemId) {
-        try {
-            List<TestCase> testCases = testCaseRepository.findByProblemId(problemId);
-            EvaluationResult evaluationResult = codeEvaluationService.evaluate(code, testCases);
-
-            // Fetch submission again to avoid detached entity issues
-            Submission submission = submissionRepository.findById(submissionId).orElseThrow();
-            submission.setStatus(SubmissionStatus.valueOf(evaluationResult.getStatus()));
-            submission.setExecutionTimeMs(evaluationResult.getExecutionTimeMs());
-            submissionRepository.save(submission);
-        } catch (Exception e) {
-            Submission submission = submissionRepository.findById(submissionId).orElseThrow();
-            submission.setStatus(SubmissionStatus.SYSTEM_ERROR);
-            submission.setExecutionTimeMs(0L);
-            submissionRepository.save(submission);
-        }
-    }
-
     @Override
     @Transactional(readOnly = true)
     public List<SubmissionResponseDto> getUserSubmissions(Long userId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findByEmailIgnoreCase(email);
+        if (currentUser == null || !currentUser.getId().equals(userId)) {
+            throw new ForbiddenException("You can only view your own submissions");
+        }
+
         return submissionRepository.findByUserId(userId)
                 .stream()
                 .map(SubmissionMapper::mapToResponseDto)

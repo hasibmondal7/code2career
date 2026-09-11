@@ -58,4 +58,7 @@ public class Submission {
 
     @Column(name = "execution_time_ms")
     private Long executionTimeMs;
+
+    @Column(name = "xp_awarded")
+    private Boolean xpAwarded = false;
 }

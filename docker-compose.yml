@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: code2career
+      POSTGRES_USER: ${POSTGRES_USER:-code2career}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d code2career"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      code-runner:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/code2career
+      DB_USERNAME: ${POSTGRES_USER:-code2career}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
+      CODE_RUNNER_URL: http://code-runner:8090
+      JPA_DDL_AUTO: validate
+      JPA_SHOW_SQL: "false"
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+    ports:
+      - "8080:8080"
+
+  code-runner:
+    build:
+      context: ./code-runner
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 8090
+      RUNNER_WORKSPACE: /workspace
+      RUNNER_DOCKER_VOLUME: code2career_runner_workspace
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runner_workspace:/workspace
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8090/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  runner_workspace:

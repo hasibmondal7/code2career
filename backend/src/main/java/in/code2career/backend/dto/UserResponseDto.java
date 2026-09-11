@@ -1,5 +1,6 @@
 package in.code2career.backend.dto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record UserResponseDto(
@@ -8,6 +9,8 @@ public record UserResponseDto(
         String email,
         Integer xp,
         Integer level,
+        Integer currentStreak,
+        LocalDate lastActiveDate,
         LocalDateTime createdAt
 ) {
 }

@@ -10,6 +10,7 @@ import lombok.Data;
 public class SubmissionDto {
 
     @NotBlank(message = "Code is required")
+    @Size(max = 100_000, message = "Code must not exceed 100000 characters")
     private String code;
 
     @NotBlank(message = "Language is required")

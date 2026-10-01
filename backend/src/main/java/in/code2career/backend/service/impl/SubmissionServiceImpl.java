@@ -57,7 +57,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         submission = submissionRepository.save(submission);
 
         // 2. Trigger Background Evaluation
-        asyncEvaluationRunner.runEvaluation(submission.getId(), dto.getCode(), problem.getId());
+        asyncEvaluationRunner.runEvaluation(submission.getId(), dto.getLanguage(), dto.getCode(), problem.getId());
 
         // 3. Return immediate response (PENDING status)
         return SubmissionMapper.mapToResponseDto(submission);

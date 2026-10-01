@@ -14,6 +14,7 @@ import in.code2career.backend.repository.UserRepository;
 import in.code2career.backend.repository.UserActivityRepository;
 import in.code2career.backend.service.CodeEvaluationService;
 import in.code2career.backend.service.BadgeService;
+import in.code2career.backend.service.RoadmapService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -39,16 +40,17 @@ public class AsyncEvaluationRunner {
     private final ProblemRepository problemRepository;
     private final UserActivityRepository userActivityRepository;
     private final BadgeService badgeService;
+    private final RoadmapService roadmapService;
 
     @Async
     @Transactional
-    public void runEvaluation(Long submissionId, String code, Long problemId) {
+    public void runEvaluation(Long submissionId, String language, String code, Long problemId) {
         try {
             // 1. Fetch test cases for the problem
             List<TestCase> testCases = testCaseRepository.findByProblemId(problemId);
 
             // 2. Evaluate code using Docker Engine (Returns EvaluationResult object)
-            EvaluationResult evaluationResult = codeEvaluationService.evaluate(code, testCases);
+            EvaluationResult evaluationResult = codeEvaluationService.evaluate(language, code, testCases);
 
             // 3. Update database with final status AND execution time
             Submission submission = submissionRepository.findByIdForUpdate(submissionId)
@@ -104,6 +106,7 @@ public class AsyncEvaluationRunner {
                 activity.setXpEarned(activity.getXpEarned() + problem.getXpReward());
                 userActivityRepository.save(activity);
                 badgeService.awardEligibleBadges(user);
+                roadmapService.recordAcceptedProblem(user, problemId);
                 submission.setXpAwarded(true);
                 submissionRepository.save(submission);
                 log.info("Gamification updated for User ID {}: XP = {}, Level = {}, Streak = {}",

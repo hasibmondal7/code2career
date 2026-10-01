@@ -13,4 +13,7 @@ public class UserProfileUpdateDto {
 
     @Size(max = 4000000, message = "Profile photo is too large")
     private String profilePhoto;
+
+    @Size(max = 12000000, message = "Banner image is too large")
+    private String bannerPhoto;
 }

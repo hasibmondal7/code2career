@@ -10,6 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -18,6 +20,7 @@ import java.util.List;
 @Service
 public class CodeEvaluationServiceImpl implements CodeEvaluationService {
 
+    private static final Logger log = LoggerFactory.getLogger(CodeEvaluationServiceImpl.class);
     private final RestClient runnerClient;
 
     public CodeEvaluationServiceImpl(
@@ -36,8 +39,9 @@ public class CodeEvaluationServiceImpl implements CodeEvaluationService {
     }
 
     @Override
-    public EvaluationResult evaluate(String code, List<TestCase> testCases) {
+    public EvaluationResult evaluate(String language, String code, List<TestCase> testCases) {
         CodeRunnerRequest request = new CodeRunnerRequest(
+                language,
                 code,
                 null,
                 testCases.stream()
@@ -56,18 +60,20 @@ public class CodeEvaluationServiceImpl implements CodeEvaluationService {
                     .retrieve()
                     .body(CodeRunnerResponse.class);
         } catch (RestClientException exception) {
+            log.error("Code runner evaluation request failed", exception);
             return new EvaluationResult("SYSTEM_ERROR", 0L);
         }
 
         if (response == null) {
+            log.error("Code runner returned an empty evaluation response");
             return new EvaluationResult("SYSTEM_ERROR", 0L);
         }
         return new EvaluationResult(response.status(), response.executionTimeMs());
     }
 
     @Override
-    public String executeCustomInput(String code, String customInput) {
-        CodeRunnerRequest request = new CodeRunnerRequest(code, customInput, List.of());
+    public String executeCustomInput(String language, String code, String customInput) {
+        CodeRunnerRequest request = new CodeRunnerRequest(language, code, customInput, List.of());
         CodeRunnerResponse response;
         try {
             response = runnerClient.post()
@@ -77,6 +83,7 @@ public class CodeEvaluationServiceImpl implements CodeEvaluationService {
                     .retrieve()
                     .body(CodeRunnerResponse.class);
         } catch (RestClientException exception) {
+            log.error("Code runner custom-input request failed", exception);
             return "System Error: code runner unavailable";
         }
 

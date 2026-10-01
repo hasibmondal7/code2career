@@ -27,7 +27,7 @@ public class ApiProtectionFilter extends OncePerRequestFilter {
     private final int executionRequestsPerMinute;
 
     public ApiProtectionFilter(
-            @Value("${app.api.max-request-bytes:262144}") int maxRequestBytes,
+            @Value("${app.api.max-request-bytes:16777216}") int maxRequestBytes,
             @Value("${app.api.general-requests-per-minute:120}") int generalRequestsPerMinute,
             @Value("${app.api.auth-requests-per-minute:10}") int authRequestsPerMinute,
             @Value("${app.api.execution-requests-per-minute:20}") int executionRequestsPerMinute

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import in.code2career.backend.enums.Difficulty;
+import java.util.Map;
 
 @Entity
 @Table(
@@ -38,6 +39,7 @@ public class Problem {
 
     @Column(name = "xp_reward")
     private Integer xpReward;
+
     @ManyToOne
     @JoinColumn(name = "topic_id", nullable = false)
     private Topic topic;
@@ -46,4 +48,10 @@ public class Problem {
     @JoinColumn(name = "admin_id")
     @JsonIgnoreProperties({"password", "email", "createdAt", "xp", "level"})
     private User addedBy;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "problem_templates", joinColumns = @JoinColumn(name = "problem_id"))
+    @MapKeyColumn(name = "language")
+    @Column(name = "code_template", columnDefinition = "TEXT")
+    private Map<String, String> templates;
 }

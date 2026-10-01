@@ -19,7 +19,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Ei endpoint diye frontend WebSocket connection start korbe
+        registry.addEndpoint("/ws-live-status-sockjs")
+                .setAllowedOriginPatterns("*");
+
         registry.addEndpoint("/ws-live-status")
                 .setAllowedOriginPatterns("*") // Production-e actual domain dibe
                 .withSockJS(); // Fallback option

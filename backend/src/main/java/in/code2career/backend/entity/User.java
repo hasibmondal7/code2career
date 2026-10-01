@@ -38,9 +38,16 @@ public class User {
     @Column(name = "profile_photo", columnDefinition = "TEXT")
     private String profilePhoto;
 
+    @Column(name = "banner_image", columnDefinition = "TEXT")
+    private String bannerPhoto;
+
     @Column(name = "xp", nullable = false)
     @Builder.Default
     private Integer xp = 0;
+
+    @Column(name = "coins", nullable = false)
+    @Builder.Default
+    private Integer coins = 100;
 
     @Column(nullable = false)
     @Builder.Default
@@ -62,6 +69,9 @@ public class User {
         }
         if (xp == null) {
             xp = 0;
+        }
+        if (coins == null) {
+            coins = 100;
         }
         if (level == null) {
             level = 1;

@@ -26,12 +26,14 @@ public final class UserMapper {
                 user.getUsername(),
                 user.getEmail(),
                 user.getXp(),
+                user.getCoins(),
                 user.getLevel(),
                 user.getCurrentStreak(),
                 user.getLastActiveDate(),
                 user.getCreatedAt(),
                 user.getRole(),
-                user.getProfilePhoto()
+                user.getProfilePhoto(),
+                user.getBannerPhoto()
         );
     }
 }

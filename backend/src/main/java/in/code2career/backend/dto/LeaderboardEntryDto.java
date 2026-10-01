@@ -4,6 +4,7 @@ public record LeaderboardEntryDto(
         String username,
         Integer totalXp,
         Integer level,
-        Integer currentStreak
+        Integer currentStreak,
+        String profilePhoto
 ) {
 }

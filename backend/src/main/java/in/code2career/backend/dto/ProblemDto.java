@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class ProblemDto {
 
@@ -30,4 +32,6 @@ public class ProblemDto {
     @NotNull(message = "Topic ID is required")
     @Positive(message = "Topic ID must be positive")
     private Long topicId;
+
+    private Map<String, String> templates;
 }

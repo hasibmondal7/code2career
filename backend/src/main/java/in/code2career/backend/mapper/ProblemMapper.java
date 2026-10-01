@@ -6,6 +6,8 @@ import in.code2career.backend.entity.Problem;
 import in.code2career.backend.entity.Topic;
 import in.code2career.backend.entity.User;
 
+import java.util.HashMap;
+
 public final class ProblemMapper {
 
     private ProblemMapper() {
@@ -20,6 +22,7 @@ public final class ProblemMapper {
                 .xpReward(dto.getXpReward())
                 .topic(topic)
                 .addedBy(adminUser)
+                .templates(dto.getTemplates() != null ? new HashMap<>(dto.getTemplates()) : new HashMap<>())
                 .build();
     }
 
@@ -30,6 +33,7 @@ public final class ProblemMapper {
         dto.setDifficulty(problem.getDifficulty());
         dto.setConstraints(problem.getConstraints());
         dto.setXpReward(problem.getXpReward());
+        dto.setTemplates(problem.getTemplates());
 
         if (problem.getTopic() != null) {
             dto.setTopicId(problem.getTopic().getId());
@@ -50,7 +54,8 @@ public final class ProblemMapper {
                 problem.getConstraints(),
                 problem.getXpReward(),
                 topicId,
-                addedById
+                addedById,
+                problem.getTemplates()
         );
     }
 }

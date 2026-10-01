@@ -46,7 +46,7 @@ services:
     environment:
       PORT: 8090
       RUNNER_WORKSPACE: /workspace
-      RUNNER_DOCKER_VOLUME: code2career_runner_workspace
+      RUNNER_DOCKER_VOLUME: ${COMPOSE_PROJECT_NAME:-code2career}_runner_workspace
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - runner_workspace:/workspace
@@ -59,3 +59,4 @@ services:
 volumes:
   postgres_data:
   runner_workspace:
+    name: ${COMPOSE_PROJECT_NAME:-code2career}_runner_workspace

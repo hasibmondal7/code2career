@@ -9,11 +9,13 @@ public record UserResponseDto(
         String username,
         String email,
         Integer xp,
+        Integer coins,
         Integer level,
         Integer currentStreak,
         LocalDate lastActiveDate,
         LocalDateTime createdAt,
         UserRole role,
-        String profilePhoto
+        String profilePhoto,
+        String bannerPhoto
 ) {
 }

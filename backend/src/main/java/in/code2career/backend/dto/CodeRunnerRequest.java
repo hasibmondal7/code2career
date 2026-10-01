@@ -3,6 +3,7 @@ package in.code2career.backend.dto;
 import java.util.List;
 
 public record CodeRunnerRequest(
+        String language,
         String code,
         String customInput,
         List<RunnerTestCase> testCases

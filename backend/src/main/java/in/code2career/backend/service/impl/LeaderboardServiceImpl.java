@@ -26,7 +26,8 @@ public class LeaderboardServiceImpl implements LeaderboardService {
                         user.getUsername(),
                         user.getXp(),
                         user.getLevel(),
-                        user.getCurrentStreak()
+                        user.getCurrentStreak(),
+                        user.getProfilePhoto()
                 ))
                 .toList();
     }

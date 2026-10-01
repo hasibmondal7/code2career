@@ -1,6 +1,7 @@
 package in.code2career.backend.dto;
 
 import in.code2career.backend.enums.Difficulty;
+import java.util.Map;
 
 public record ProblemResponseDto(
         Long id,
@@ -10,6 +11,7 @@ public record ProblemResponseDto(
         String constraints,
         Integer xpReward,
         Long topicId,
-        Long addedByUserId
+        Long addedByUserId,
+        Map<String, String> templates
 ) {
 }

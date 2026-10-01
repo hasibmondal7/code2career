@@ -23,6 +23,7 @@ class LeaderboardServiceImplTest {
                 .xp(100)
                 .level(2)
                 .currentStreak(4)
+                .profilePhoto("data:image/jpeg;base64,abc")
                 .build();
         when(userRepository.findTop10ByOrderByTotalXpDesc()).thenReturn(List.of(user));
 
@@ -33,5 +34,6 @@ class LeaderboardServiceImplTest {
         assertEquals(100, result.get(0).totalXp());
         assertEquals(2, result.get(0).level());
         assertEquals(4, result.get(0).currentStreak());
+        assertEquals("data:image/jpeg;base64,abc", result.get(0).profilePhoto());
     }
 }

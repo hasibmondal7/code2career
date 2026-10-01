@@ -45,6 +45,46 @@ export async function getActivity(from, to) {
   return data
 }
 
+export async function getRoadmaps() {
+  const { data } = await api.get('/api/roadmaps')
+  return data
+}
+
+export async function getRoadmap(roadmapId) {
+  const { data } = await api.get(`/api/roadmaps/${roadmapId}`)
+  return data
+}
+
+export async function createPvpRoom(payload) {
+  const { data } = await api.post('/api/pvp/rooms', payload)
+  return data
+}
+
+export async function joinPvpRoom(inviteCode) {
+  const { data } = await api.post(`/api/pvp/rooms/${encodeURIComponent(inviteCode)}/join`)
+  return data
+}
+
+export async function getPvpRoom(inviteCode) {
+  const { data } = await api.get(`/api/pvp/rooms/${encodeURIComponent(inviteCode)}`)
+  return data
+}
+
+export async function startPvpRoom(inviteCode) {
+  const { data } = await api.post(`/api/pvp/rooms/${encodeURIComponent(inviteCode)}/start`)
+  return data
+}
+
+export async function getOpenPvpRooms() {
+  const { data } = await api.get('/api/pvp/rooms/open')
+  return data
+}
+
+export async function submitPvpCode(inviteCode, code, language = 'JAVA') {
+  const { data } = await api.post(`/api/pvp/rooms/${encodeURIComponent(inviteCode)}/submit`, { code, language })
+  return data
+}
+
 export async function getSubmissions(userId) {
   const { data } = await api.get(`/api/submissions/user/${userId}`)
   return data
@@ -55,26 +95,26 @@ export async function getSubmission(submissionId) {
   return data
 }
 
-export async function runCode(code, customInput) {
+export async function runCode(code, customInput, language = 'java') {
   const { data } = await api.post('/api/submissions/run', {
-    language: 'java',
+    language,
     code,
     customInput,
   })
   return data
 }
 
-export async function submitSolution(problemId, code) {
+export async function submitSolution(problemId, code, language = 'java') {
   const { data } = await api.post('/api/submissions', {
     problemId,
-    language: 'java',
+    language,
     code,
   })
   return data
 }
 
-export async function updateProfile(username, profilePhoto) {
-  const { data } = await api.patch('/api/users/me', { username, profilePhoto })
+export async function updateProfile(username, profilePhoto, bannerPhoto) {
+  const { data } = await api.patch('/api/users/me', { username, profilePhoto, bannerPhoto })
   return data
 }
 

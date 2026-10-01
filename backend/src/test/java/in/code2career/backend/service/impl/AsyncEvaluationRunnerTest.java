@@ -12,6 +12,7 @@ import in.code2career.backend.repository.UserRepository;
 import in.code2career.backend.repository.UserActivityRepository;
 import in.code2career.backend.service.CodeEvaluationService;
 import in.code2career.backend.service.BadgeService;
+import in.code2career.backend.service.RoadmapService;
 import org.junit.jupiter.api.Test;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
@@ -31,6 +32,7 @@ class AsyncEvaluationRunnerTest {
     private final ProblemRepository problemRepository = mock(ProblemRepository.class);
     private final UserActivityRepository userActivityRepository = mock(UserActivityRepository.class);
     private final BadgeService badgeService = mock(BadgeService.class);
+    private final RoadmapService roadmapService = mock(RoadmapService.class);
     private final AsyncEvaluationRunner runner = new AsyncEvaluationRunner(
             testCaseRepository,
             codeEvaluationService,
@@ -39,7 +41,8 @@ class AsyncEvaluationRunnerTest {
             userRepository,
             problemRepository,
             userActivityRepository,
-            badgeService
+            badgeService,
+            roadmapService
     );
 
     @Test
@@ -55,11 +58,11 @@ class AsyncEvaluationRunnerTest {
                 .build();
 
         when(testCaseRepository.findByProblemId(2L)).thenReturn(List.of());
-        when(codeEvaluationService.evaluate("class Solution {}", List.of()))
+        when(codeEvaluationService.evaluate("JAVA", "class Solution {}", List.of()))
                 .thenReturn(new EvaluationResult("ACCEPTED", 5L));
         when(submissionRepository.findByIdForUpdate(3L)).thenReturn(Optional.of(submission));
 
-        runner.runEvaluation(3L, "class Solution {}", 2L);
+        runner.runEvaluation(3L, "JAVA", "class Solution {}", 2L);
 
         assertEquals(10, user.getXp());
         verify(userRepository, never()).save(any(User.class));

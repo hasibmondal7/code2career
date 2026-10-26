@@ -8,6 +8,8 @@ import java.util.List;
 public interface PvpRoomPlayerRepository extends JpaRepository<PvpRoomPlayer, Long> {
     boolean existsByRoomIdAndUserId(Long roomId, Long userId);
 
+    boolean existsByRoom_IdAndUser_EmailIgnoreCase(Long roomId, String email);
+
     long countByRoomId(Long roomId);
 
     List<PvpRoomPlayer> findByRoomIdOrderByJoinedAtAsc(Long roomId);

@@ -25,7 +25,7 @@ class LeaderboardServiceImplTest {
                 .currentStreak(4)
                 .profilePhoto("data:image/jpeg;base64,abc")
                 .build();
-        when(userRepository.findTop10ByOrderByTotalXpDesc()).thenReturn(List.of(user));
+        when(userRepository.findTop10ByOrderByXpDesc()).thenReturn(List.of(user));
 
         List<LeaderboardEntryDto> result = leaderboardService.getTopUsers();
 

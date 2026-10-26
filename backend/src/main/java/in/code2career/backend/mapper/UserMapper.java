@@ -4,6 +4,8 @@ import in.code2career.backend.dto.UserDto;
 import in.code2career.backend.dto.UserResponseDto;
 import in.code2career.backend.entity.User;
 
+import java.util.Locale;
+
 public final class UserMapper {
 
     private UserMapper() {
@@ -12,7 +14,7 @@ public final class UserMapper {
     public static User mapToEntity(UserDto dto, String encodedPassword) {
         return User.builder()
                 .username(dto.getUsername().trim())
-                .email(dto.getEmail().trim().toLowerCase())
+                .email(dto.getEmail().trim().toLowerCase(Locale.ROOT))
                 .password(encodedPassword)
                 .xp(0)
                 .level(1)

@@ -31,6 +31,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class PvpRoomServiceImpl implements PvpRoomService {
@@ -79,7 +80,7 @@ public class PvpRoomServiceImpl implements PvpRoomService {
                 .timeLimitMinutes(request.timeLimitMinutes())
                 .maxPlayers(request.maxPlayers())
                 .stakeCoins(request.stakeCoins())
-                .language(request.language().toUpperCase())
+                .language(request.language().toUpperCase(Locale.ROOT))
                 .publicMatch(request.publicMatch())
                 .problem(problem)
                 .host(host)
@@ -358,6 +359,6 @@ public class PvpRoomServiceImpl implements PvpRoomService {
     }
 
     private String normalizeInviteCode(String inviteCode) {
-        return inviteCode.trim().toUpperCase();
+        return inviteCode.trim().toUpperCase(Locale.ROOT);
     }
 }

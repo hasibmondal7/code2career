@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres:18-alpine
     restart: unless-stopped
+    networks:
+      - database
     environment:
       POSTGRES_DB: code2career
       POSTGRES_USER: ${POSTGRES_USER:-code2career}
@@ -19,6 +21,9 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
+    networks:
+      - database
+      - runner
     depends_on:
       postgres:
         condition: service_healthy
@@ -30,23 +35,40 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
-      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:5173}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:?Set CORS_ALLOWED_ORIGIN}
+      PASSWORD_RESET_CODE_EXPIRATION_MINUTES: ${PASSWORD_RESET_CODE_EXPIRATION_MINUTES:-10}
+      MAIL_HOST: ${MAIL_HOST:?Set MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-true}
+      MAIL_SMTP_STARTTLS_REQUIRED: ${MAIL_SMTP_STARTTLS_REQUIRED:-true}
+      MAIL_FROM: ${MAIL_FROM:-noreply@code2career.local}
       CODE_RUNNER_URL: http://code-runner:8090
+      CODE_RUNNER_TOKEN: ${CODE_RUNNER_TOKEN:?Set CODE_RUNNER_TOKEN}
       JPA_DDL_AUTO: validate
       JPA_SHOW_SQL: "false"
       FLYWAY_BASELINE_ON_MIGRATE: "true"
+      MANAGEMENT_HEALTH_MAIL_ENABLED: ${MANAGEMENT_HEALTH_MAIL_ENABLED:-true}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      SPRINGDOC_API_DOCS_ENABLED: "false"
+      SPRINGDOC_SWAGGER_UI_ENABLED: "false"
     ports:
-      - "8080:8080"
+      - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
 
   code-runner:
     build:
       context: ./code-runner
       dockerfile: Dockerfile
     restart: unless-stopped
+    networks:
+      - runner
     environment:
       PORT: 8090
       RUNNER_WORKSPACE: /workspace
       RUNNER_DOCKER_VOLUME: ${COMPOSE_PROJECT_NAME:-code2career}_runner_workspace
+      RUNNER_AUTH_TOKEN: ${CODE_RUNNER_TOKEN:?Set CODE_RUNNER_TOKEN}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - runner_workspace:/workspace
@@ -56,7 +78,21 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    profiles: ["local"]
+    networks:
+      - database
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+
 volumes:
   postgres_data:
   runner_workspace:
     name: ${COMPOSE_PROJECT_NAME:-code2career}_runner_workspace
+
+networks:
+  database:
+  runner:

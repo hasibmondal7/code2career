@@ -2,6 +2,7 @@ package in.code2career.backend.service.impl;
 
 import in.code2career.backend.dto.ActivityResponseDto;
 import in.code2career.backend.entity.User;
+import in.code2career.backend.exception.InvalidRequestException;
 import in.code2career.backend.exception.InvalidCredentialsException;
 import in.code2career.backend.repository.UserActivityRepository;
 import in.code2career.backend.repository.UserRepository;
@@ -28,7 +29,7 @@ public class ActivityServiceImpl implements ActivityService {
     @Transactional(readOnly = true)
     public List<ActivityResponseDto> getCurrentUserActivity(LocalDate from, LocalDate to) {
         if (from.isAfter(to)) {
-            throw new IllegalArgumentException("Activity start date must not be after end date");
+            throw new InvalidRequestException("Activity start date must not be after end date");
         }
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();

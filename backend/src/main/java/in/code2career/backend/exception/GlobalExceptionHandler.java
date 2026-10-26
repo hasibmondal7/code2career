@@ -10,8 +10,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.mail.MailException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -52,6 +55,14 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return buildResponse(HttpStatus.FORBIDDEN, exception.getMessage(), request.getRequestURI(), Map.of());
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<ApiError> handleInvalidRequest(
+            InvalidRequestException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI(), Map.of());
     }
 
     @ExceptionHandler(AuthorizationDeniedException.class)
@@ -106,6 +117,21 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler({
+            MethodArgumentTypeMismatchException.class,
+            MissingServletRequestParameterException.class
+    })
+    public ResponseEntity<ApiError> handleInvalidRequestParameter(
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "A required request parameter is missing or invalid",
+                request.getRequestURI(),
+                Map.of()
+        );
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrityViolation(
             DataIntegrityViolationException exception,
@@ -114,6 +140,20 @@ public class GlobalExceptionHandler {
         return buildResponse(
                 HttpStatus.CONFLICT,
                 "The request conflicts with existing data",
+                request.getRequestURI(),
+                Map.of()
+        );
+    }
+
+    @ExceptionHandler(MailException.class)
+    public ResponseEntity<ApiError> handleMailDeliveryFailure(
+            MailException exception,
+            HttpServletRequest request
+    ) {
+        log.error("Email delivery failed for {}", request.getRequestURI(), exception);
+        return buildResponse(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Password reset email could not be sent. Please try again later.",
                 request.getRequestURI(),
                 Map.of()
         );

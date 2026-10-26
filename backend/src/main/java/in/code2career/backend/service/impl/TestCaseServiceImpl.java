@@ -43,7 +43,7 @@ public class TestCaseServiceImpl implements TestCaseService {
     @Override
     @Transactional(readOnly = true)
     public List<TestCaseResponseDto> getTestCasesByProblem(Long problemId) {
-        return testCaseRepository.findByProblemId(problemId)
+        return testCaseRepository.findByProblemIdAndIsHiddenFalse(problemId)
                 .stream()
                 .map(TestCaseMapper::mapToResponseDto)
                 .toList();

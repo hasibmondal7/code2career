@@ -51,12 +51,17 @@ public class SecurityConfig {
                                 "/api/users/register",
                                 "/api/health",
                                 "/api/users/login",
+                                "/api/users/password-reset/request",
+                                "/api/users/password-reset/confirm",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/actuator/health/**",
                                 "/actuator/info",
-                                "/ws-live-status/**"
+                                "/ws-live-status",
+                                "/ws-live-status/**",
+                                "/ws-live-status-sockjs",
+                                "/ws-live-status-sockjs/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

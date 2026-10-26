@@ -137,6 +137,14 @@ export async function changePassword(currentPassword, newPassword) {
   await api.put('/api/users/password', { currentPassword, newPassword })
 }
 
+export async function requestPasswordReset(email) {
+  await api.post('/api/users/password-reset/request', { email })
+}
+
+export async function resetPassword(email, otp, newPassword) {
+  await api.post('/api/users/password-reset/confirm', { email, otp, newPassword })
+}
+
 export function logout() {
   removeItem(appConfig.tokenStorageKey)
 }

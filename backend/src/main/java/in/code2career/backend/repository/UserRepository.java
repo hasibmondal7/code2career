@@ -12,8 +12,7 @@ import java.util.List;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    @Query("SELECT u FROM User u ORDER BY u.xp DESC")
-    List<User> findTop10ByOrderByTotalXpDesc();
+    List<User> findTop10ByOrderByXpDesc();
 
     User findByEmailIgnoreCase(String email);
 

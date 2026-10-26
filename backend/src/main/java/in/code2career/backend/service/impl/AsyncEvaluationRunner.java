@@ -65,10 +65,9 @@ public class AsyncEvaluationRunner {
             if ("ACCEPTED".equals(finalStatus) && !Boolean.TRUE.equals(submission.getXpAwarded())) {
 
                 // Fixed: Fetched user directly from submission object
-                User user = submission.getUser();
-                if (user == null) {
-                    throw new RuntimeException("User not found for this submission");
-                }
+                Long userId = submission.getUser().getId();
+                User user = userRepository.findByIdForUpdate(userId)
+                        .orElseThrow(() -> new RuntimeException("User not found for this submission"));
 
                 Problem problem = problemRepository.findById(problemId)
                         .orElseThrow(() -> new RuntimeException("Problem not found with ID: " + problemId));

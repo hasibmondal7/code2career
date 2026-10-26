@@ -4,6 +4,7 @@ import in.code2career.backend.dto.EvaluationResult;
 import in.code2career.backend.entity.Problem;
 import in.code2career.backend.entity.Submission;
 import in.code2career.backend.entity.User;
+import in.code2career.backend.entity.UserActivity;
 import in.code2career.backend.enums.SubmissionStatus;
 import in.code2career.backend.repository.ProblemRepository;
 import in.code2career.backend.repository.SubmissionRepository;
@@ -18,6 +19,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -67,5 +69,48 @@ class AsyncEvaluationRunnerTest {
         assertEquals(10, user.getXp());
         verify(userRepository, never()).save(any(User.class));
         verify(messagingTemplate).convertAndSend("/topic/submissions/3", "ACCEPTED");
+    }
+
+    @Test
+    void locksUserBeforeApplyingGamificationUpdates() {
+        LocalDate today = LocalDate.now();
+        User user = User.builder()
+                .id(1L)
+                .xp(10)
+                .currentStreak(1)
+                .lastActiveDate(today)
+                .build();
+        Problem problem = Problem.builder().id(2L).xpReward(10).build();
+        Submission submission = Submission.builder()
+                .id(3L)
+                .status(SubmissionStatus.PENDING)
+                .user(user)
+                .problem(problem)
+                .xpAwarded(false)
+                .build();
+        UserActivity activity = UserActivity.builder()
+                .user(user)
+                .activityDate(today)
+                .problemsSolved(0)
+                .acceptedSubmissions(0)
+                .xpEarned(0)
+                .build();
+
+        when(testCaseRepository.findByProblemId(2L)).thenReturn(List.of());
+        when(codeEvaluationService.evaluate("JAVA", "class Solution {}", List.of()))
+                .thenReturn(new EvaluationResult("ACCEPTED", 5L));
+        when(submissionRepository.findByIdForUpdate(3L)).thenReturn(Optional.of(submission));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(problemRepository.findById(2L)).thenReturn(Optional.of(problem));
+        when(userActivityRepository.findByUserIdAndActivityDate(1L, today))
+                .thenReturn(Optional.of(activity));
+
+        runner.runEvaluation(3L, "JAVA", "class Solution {}", 2L);
+
+        assertEquals(20, user.getXp());
+        assertEquals(1, activity.getProblemsSolved());
+        assertEquals(1, activity.getAcceptedSubmissions());
+        assertEquals(10, activity.getXpEarned());
+        verify(userRepository).findByIdForUpdate(1L);
     }
 }

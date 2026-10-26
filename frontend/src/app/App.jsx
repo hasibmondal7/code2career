@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import { appConfig } from '../config/appConfig'
-import { changePassword, createProblem, createPvpRoom, createTestCase, createTopic, getActivity, getBadges, getCurrentUser, getLeaderboard, getOpenPvpRooms, getProblems, getPvpRoom, getRoadmaps, getSubmission, getSubmissions, getTopics, joinPvpRoom, login, logout, register, runCode, startPvpRoom, submitPvpCode, submitSolution, updateProfile } from '../services/api/endpoints'
+import { changePassword, createProblem, createPvpRoom, createTestCase, createTopic, getActivity, getBadges, getCurrentUser, getLeaderboard, getOpenPvpRooms, getProblems, getPvpRoom, getRoadmaps, getSubmission, getSubmissions, getTopics, joinPvpRoom, login, logout, register, requestPasswordReset, resetPassword, runCode, startPvpRoom, submitPvpCode, submitSolution, updateProfile } from '../services/api/endpoints'
 import { getItem, removeItem, setItem } from '../services/storage/localStorage'
 import { subscribeToPvpRoom } from '../services/pvp/pvpSocket'
 import { subscribeToSubmission } from '../services/submissions/submissionSocket'
@@ -204,7 +204,12 @@ function SplashScreen() {
 
 function AuthScreen({ mode, setMode, onAuthenticated }) {
   const [form, setForm] = useState({ username: '', email: '', password: '' })
+  const [view, setView] = useState(mode)
+  const [otp, setOtp] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleChange = (event) => {
@@ -214,16 +219,53 @@ function AuthScreen({ mode, setMode, onAuthenticated }) {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
+    setNotice('')
     setLoading(true)
     try {
-      const user = mode === 'register' ? await register(form) : await login(form)
-      onAuthenticated(user)
+      if (view === 'forgot') {
+        await requestPasswordReset(form.email)
+        setView('verify')
+        setNotice('If an account exists for that email, a 6-digit reset code has been sent.')
+      } else if (view === 'verify') {
+        if (newPassword !== confirmPassword) {
+          setError('The passwords do not match.')
+          return
+        }
+        await resetPassword(form.email, otp, newPassword)
+        setView('login')
+        setMode('login')
+        setOtp('')
+        setNewPassword('')
+        setConfirmPassword('')
+        setNotice('Your password has been updated. Sign in with your new password.')
+      } else {
+        const user = view === 'register' ? await register(form) : await login(form)
+        onAuthenticated(user)
+      }
     } catch (requestError) {
-      setError(requestError.response?.data?.message || 'We could not complete that request. Please try again.')
+      setError(view === 'verify'
+        ? 'That code is invalid or expired. Check it and try again, or request a new code.'
+        : requestError.response?.data?.message || requestError.message || 'We could not complete that request. Please try again.')
     } finally {
       setLoading(false)
     }
   }
+
+  const switchView = (nextView) => {
+    setError('')
+    setNotice('')
+    setView(nextView)
+    if (nextView === 'forgot') {
+      setOtp('')
+      setNewPassword('')
+      setConfirmPassword('')
+    }
+    if (nextView === 'login' || nextView === 'register') setMode(nextView)
+  }
+  const isLogin = view === 'login'
+  const isRegister = view === 'register'
+  const isForgot = view === 'forgot'
+  const isVerify = view === 'verify'
 
   return (
     <div className="auth-shell">
@@ -231,7 +273,47 @@ function AuthScreen({ mode, setMode, onAuthenticated }) {
       <div className="auth-brand"><img className="brand-logo" src="/c2c-logo.png" alt="C2C" /><div><strong>code<span>2</span>career</strong><small>LEVEL UP YOUR CRAFT</small></div></div>
       <div className="auth-layout">
         <div className="auth-pitch"><p className="eyebrow">THE DEVELOPER GUILD</p><h1>Build skills.<br /><span>Forge your legend.</span></h1><p className="auth-description">A focused arena for ambitious developers. Solve real problems, build your streak, and rise through the ranks.</p><div className="auth-proof"><div><strong>2.4k+</strong><small>active learners</small></div><div><strong>38k</strong><small>quests cleared</small></div><div><strong>98%</strong><small>feel stronger</small></div></div></div>
-        <div className="auth-card"><div className="auth-tabs"><button className={mode === 'login' ? 'selected' : ''} onClick={() => setMode('login')}>Sign in</button><button className={mode === 'register' ? 'selected' : ''} onClick={() => setMode('register')}>Create account</button></div><p className="eyebrow">{mode === 'login' ? 'WELCOME BACK, WARRIOR' : 'JOIN THE GUILD'}</p><h2>{mode === 'login' ? 'Enter the arena' : 'Begin your quest'}</h2><p className="muted">{mode === 'login' ? 'Your next level is waiting.' : 'Create your profile and earn your first XP.'}</p><form onSubmit={handleSubmit}>{mode === 'register' && <input name="username" placeholder="Username" value={form.username} onChange={handleChange} required minLength="3" />}<input name="email" type="email" placeholder="Email address" value={form.email} onChange={handleChange} required /><input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required minLength="8" /><button className="primary-button auth-submit" disabled={loading}>{loading ? 'Loading...' : mode === 'login' ? 'Enter dashboard →' : 'Create my profile →'}</button></form>{error && <p className="auth-error">{error}</p>}<small className="auth-note">By continuing, you agree to the guild rules and privacy policy.</small></div>
+        <div className="auth-card">
+          {!isForgot && !isVerify && <div className="auth-tabs"><button className={isLogin ? 'selected' : ''} onClick={() => switchView('login')}>Sign in</button><button className={isRegister ? 'selected' : ''} onClick={() => switchView('register')}>Create account</button></div>}
+          <p className="eyebrow">{isForgot || isVerify ? 'ACCOUNT RECOVERY' : isLogin ? 'WELCOME BACK, WARRIOR' : 'JOIN THE GUILD'}</p>
+          <h2>{isForgot ? 'Forgot your password?' : isVerify ? 'Enter your reset code' : isLogin ? 'Enter the arena' : 'Begin your quest'}</h2>
+          <p className="muted">{isForgot ? 'Enter your account email and we will send a 6-digit code.' : isVerify ? `Enter the code sent to ${form.email}, then choose a new password.` : isLogin ? 'Your next level is waiting.' : 'Create your profile and earn your first XP.'}</p>
+          <form onSubmit={handleSubmit}>
+            {isRegister && <input name="username" placeholder="Username" value={form.username} onChange={handleChange} required minLength="3" />}
+            {(isLogin || isRegister || isForgot) && <input name="email" type="email" placeholder="Email address" value={form.email} onChange={handleChange} required />}
+            {isLogin && <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required minLength="8" />}
+            {isVerify && <>
+              <input type="text" inputMode="numeric" autoComplete="one-time-code" placeholder="6-digit email code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} required pattern="[0-9]{6}" maxLength="6" />
+              <input type="password" placeholder="New password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required minLength="8" maxLength="72" autoComplete="new-password" />
+              <input type="password" placeholder="Confirm new password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength="8" maxLength="72" autoComplete="new-password" />
+            </>}
+            <button className="primary-button auth-submit" disabled={loading}>{loading ? 'Loading...' : isForgot ? 'Send code →' : isVerify ? 'Verify code & update password →' : isLogin ? 'Enter dashboard →' : 'Create my profile →'}</button>
+          </form>
+          {isLogin && <button className="auth-text-button" type="button" onClick={() => switchView('forgot')}>Forgot password?</button>}
+          {isForgot && <button className="auth-text-button" type="button" onClick={() => switchView('login')}>Back to sign in</button>}
+          {isVerify && <>
+            <button className="auth-text-button" type="button" onClick={() => switchView('forgot')}>Use another email or request another code</button>
+            <button className="auth-text-button" type="button" onClick={async () => {
+              setError('')
+              setNotice('')
+              setLoading(true)
+              try {
+                await requestPasswordReset(form.email)
+                setOtp('')
+                setNewPassword('')
+                setConfirmPassword('')
+                setNotice('If an account exists for that email, a new 6-digit code has been sent.')
+              } catch (requestError) {
+                setError(requestError.response?.data?.message || 'We could not send a new code. Please try again.')
+              } finally {
+                setLoading(false)
+              }
+            }} disabled={loading}>Resend code</button>
+          </>}
+          {error && <p className="auth-error" role="alert">{error}</p>}
+          {notice && <p className="auth-success" role="status">{notice}</p>}
+          {!isForgot && !isVerify && <small className="auth-note">By continuing, you agree to the guild rules and privacy policy.</small>}
+        </div>
       </div>
     </div>
   )

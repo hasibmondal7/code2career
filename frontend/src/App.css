@@ -13,6 +13,10 @@
   --orange: #ff9f67;
 }
 
+.auth-text-button { display: block; margin: 14px auto 0; padding: 0; border: 0; color: #bda0ff; background: transparent; font-size: 11px; cursor: pointer; }
+.auth-text-button:hover { color: #e0d1ff; text-decoration: underline; }
+.auth-success { margin: 14px 0 0; color: #8fe2bd; font-size: 11px; line-height: 1.6; }
+
 .app-shell { min-height: 100vh; display: flex; background: radial-gradient(circle at 72% -10%, rgba(118, 69, 229, .12), transparent 31%), var(--bg); }
 .app-shell:before { content: ''; position: fixed; z-index: 0; inset: 0; pointer-events: none; opacity: .18; background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 42px 42px; mask-image: linear-gradient(to bottom, black, transparent 75%); }
 .splash-screen { position: fixed; z-index: 99; inset: 0; display: grid; place-items: center; overflow: hidden; color: #f8f4ff; background: #000 url('/c2c-logo.png') center / min(640px, 88vw) auto no-repeat; animation: splash-fade .55s ease 1.35s forwards; }

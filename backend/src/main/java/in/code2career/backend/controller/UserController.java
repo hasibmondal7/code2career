@@ -2,6 +2,8 @@ package in.code2career.backend.controller;
 
 import in.code2career.backend.dto.AuthResponseDto;
 import in.code2career.backend.dto.ChangePasswordDto;
+import in.code2career.backend.dto.ForgotPasswordDto;
+import in.code2career.backend.dto.ResetPasswordDto;
 import in.code2career.backend.dto.UserProfileUpdateDto;
 import in.code2career.backend.dto.LoginDto;
 import in.code2career.backend.dto.UserDto;
@@ -38,6 +40,20 @@ public class UserController {
     @PutMapping("/password")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordDto changePasswordDto) {
         userService.changePassword(changePasswordDto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<Void> requestPasswordReset(@Valid @RequestBody ForgotPasswordDto request) {
+        userService.requestPasswordReset(request.getEmail());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordDto request) {
+        if (!userService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword())) {
+            return ResponseEntity.badRequest().build();
+        }
         return ResponseEntity.noContent().build();
     }
 

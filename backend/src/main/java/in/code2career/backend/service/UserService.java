@@ -15,6 +15,10 @@ public interface UserService {
 
     void changePassword(ChangePasswordDto changePasswordDto);
 
+    void requestPasswordReset(String email);
+
+    boolean resetPassword(String email, String otp, String newPassword);
+
     UserResponseDto getCurrentUser();
 
     UserResponseDto updateCurrentUser(UserProfileUpdateDto profileUpdateDto);

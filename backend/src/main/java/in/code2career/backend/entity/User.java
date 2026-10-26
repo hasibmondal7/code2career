@@ -57,6 +57,10 @@ public class User {
     @Builder.Default
     private Integer currentStreak = 0;
 
+    @Column(name = "token_version", nullable = false)
+    @Builder.Default
+    private Integer tokenVersion = 0;
+
     @Column(name = "last_active_date")
     private LocalDate lastActiveDate;
 
@@ -78,6 +82,9 @@ public class User {
         }
         if (currentStreak == null) {
             currentStreak = 0;
+        }
+        if (tokenVersion == null) {
+            tokenVersion = 0;
         }
         if (role == null) {
             role = UserRole.USER;

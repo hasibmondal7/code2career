@@ -20,7 +20,7 @@ public class LeaderboardServiceImpl implements LeaderboardService {
     @Override
     @Transactional(readOnly = true)
     public List<LeaderboardEntryDto> getTopUsers() {
-        return userRepository.findTop10ByOrderByTotalXpDesc()
+        return userRepository.findTop10ByOrderByXpDesc()
                 .stream()
                 .map(user -> new LeaderboardEntryDto(
                         user.getUsername(),

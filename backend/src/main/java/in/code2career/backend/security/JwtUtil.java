@@ -26,9 +26,10 @@ public class JwtUtil {
         this.expirationMs = jwtProperties.getExpirationMs();
     }
 
-    public String generateToken(String email) {
+    public String generateToken(String email, int tokenVersion) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("tokenVersion", tokenVersion)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(key)
@@ -43,6 +44,23 @@ public class JwtUtil {
         try {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean validateToken(String token, int currentTokenVersion) {
+        try {
+            Object tokenVersion = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .get("tokenVersion");
+            int issuedTokenVersion = tokenVersion instanceof Number number
+                    ? number.intValue()
+                    : tokenVersion == null ? 0 : -1;
+            return issuedTokenVersion == currentTokenVersion;
         } catch (Exception e) {
             return false;
         }

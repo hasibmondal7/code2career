@@ -22,24 +22,32 @@ public class CodeEvaluationServiceImpl implements CodeEvaluationService {
 
     private static final Logger log = LoggerFactory.getLogger(CodeEvaluationServiceImpl.class);
     private final RestClient runnerClient;
+    private final String runnerToken;
 
     public CodeEvaluationServiceImpl(
-            @Value("${app.code-runner.url:http://localhost:8090}") String runnerUrl
+            @Value("${app.code-runner.url:http://localhost:8090}") String runnerUrl,
+            @Value("${app.code-runner.token:}") String runnerToken
     ) {
             HttpClient httpClient = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(3))
                     .build();
             org.springframework.http.client.JdkClientHttpRequestFactory requestFactory =
                     new org.springframework.http.client.JdkClientHttpRequestFactory(httpClient);
-            requestFactory.setReadTimeout(Duration.ofSeconds(15));
+            requestFactory.setReadTimeout(Duration.ofSeconds(70));
             this.runnerClient = RestClient.builder()
                     .baseUrl(runnerUrl)
                     .requestFactory(requestFactory)
                     .build();
+            this.runnerToken = runnerToken;
     }
 
     @Override
     public EvaluationResult evaluate(String language, String code, List<TestCase> testCases) {
+        if (testCases == null || testCases.isEmpty()) {
+            log.error("Cannot evaluate a submission without test cases");
+            return new EvaluationResult("SYSTEM_ERROR", 0L);
+        }
+
         CodeRunnerRequest request = new CodeRunnerRequest(
                 language,
                 code,
@@ -56,6 +64,11 @@ public class CodeEvaluationServiceImpl implements CodeEvaluationService {
             response = runnerClient.post()
                     .uri("/evaluate")
                     .contentType(MediaType.APPLICATION_JSON)
+                    .headers(headers -> {
+                        if (!runnerToken.isBlank()) {
+                            headers.set("X-Code-Runner-Token", runnerToken);
+                        }
+                    })
                     .body(request)
                     .retrieve()
                     .body(CodeRunnerResponse.class);
@@ -79,6 +92,11 @@ public class CodeEvaluationServiceImpl implements CodeEvaluationService {
             response = runnerClient.post()
                     .uri("/evaluate")
                     .contentType(MediaType.APPLICATION_JSON)
+                    .headers(headers -> {
+                        if (!runnerToken.isBlank()) {
+                            headers.set("X-Code-Runner-Token", runnerToken);
+                        }
+                    })
                     .body(request)
                     .retrieve()
                     .body(CodeRunnerResponse.class);

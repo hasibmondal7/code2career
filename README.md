@@ -54,6 +54,19 @@ Students can create and manage their Code2Career account.
 - Profile Management
 - Social Login _(planned)_
 
+Password-reset OTP emails require SMTP configuration in the deployment environment. Set `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM`, and, when required by the provider, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH=true`, and `MAIL_SMTP_STARTTLS=true`. For Gmail, enable 2-Step Verification, create a Google App Password, then use `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587`, `MAIL_USERNAME=your Gmail address`, `MAIL_PASSWORD=your 16-character App Password`, `MAIL_SMTP_AUTH=true`, `MAIL_SMTP_STARTTLS=true`, and `MAIL_FROM=your Gmail address`. Never use your regular Gmail password. OTPs expire after `PASSWORD_RESET_CODE_EXPIRATION_MINUTES` (10 minutes by default) and allow at most five attempts.
+
+For local demos, start Mailpit with `docker compose --profile local up -d mailpit`; view captured OTP emails at `http://localhost:8025`. When running the backend directly from the IDE, use `MAIL_HOST=localhost`, `MAIL_PORT=1025`, with SMTP authentication and TLS disabled.
+
+## Production deployment
+
+1. Copy `.env.example` to `.env` and replace every placeholder. Use unique 32+ byte values for `JWT_SECRET` and `CODE_RUNNER_TOKEN`, a managed PostgreSQL password, your deployed frontend URL for `CORS_ALLOWED_ORIGIN`, and a real SMTP provider. Do not use Mailpit in production.
+2. Build and start the services with `docker compose up -d --build`. The backend listens only on `127.0.0.1:${BACKEND_PORT:-8080}`; publish it through an HTTPS reverse proxy (for example Nginx or Caddy), including WebSocket upgrade support for `/ws-live-status` and `/ws-live-status-sockjs`.
+3. Set the frontend build variable `VITE_API_URL` to the public HTTPS backend URL, then run `npm ci && npm run build` from `frontend` and serve `frontend/dist` over HTTPS.
+4. Check `https://your-api-domain/actuator/health` after deployment. Swagger and OpenAPI endpoints are disabled in the Compose production configuration.
+
+Set `JWT_SECRET` to a cryptographically random value of at least 32 bytes before starting the backend. The application intentionally refuses to start without it rather than using a predictable development secret.
+
 ---
 
 ## 📚 2. Programming Learning

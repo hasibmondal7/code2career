@@ -19,6 +19,8 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
     long countByUserIdAndStatus(Long userId, SubmissionStatus status);
 
+    boolean existsByIdAndUser_EmailIgnoreCase(Long id, String email);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM Submission s WHERE s.id = :id")
     Optional<Submission> findByIdForUpdate(@Param("id") Long id);

@@ -104,7 +104,7 @@ The backend sends evaluation requests to the separate `code-runner` service. The
 
 ## Database Migrations
 
-Flyway migrations cover the initial schema, user roles and gamification, profile and problem updates, roadmaps, and PvP rooms. The latest migration is `V17__add_pvp_battle_stakes.sql`.
+Flyway migrations cover the initial schema, user roles and gamification, profile and problem updates, roadmaps, PvP rooms, password resets, token versioning, and account status. The latest migration is `V22__add_user_account_status.sql`.
 
 ## Documentation and Operations
 
@@ -174,7 +174,7 @@ The frontend includes friend invite rooms, public matchmaking acceptance, live l
 
 ### Two-phone local PvP smoke test
 
-1. Restart/rebuild the backend so Flyway applies migration V17 and the PvP endpoints are loaded. Rebuild the code-runner image as well.
+1. Restart/rebuild the backend so Flyway applies all pending migrations, currently through V22, and the PvP endpoints are loaded. Rebuild the code-runner image as well.
 2. Find the development computer's LAN IPv4 address. Set `CORS_ALLOWED_ORIGIN` to both `http://localhost:5173` and `http://<LAN-IP>:5173`, and set the frontend `VITE_API_URL` to `http://<LAN-IP>:8080`.
 3. Start the frontend with `npm run dev -- --host 0.0.0.0`; allow ports 5173 and 8080 through the computer's firewall on the private network.
 4. Connect both phones to the same Wi-Fi and open `http://<LAN-IP>:5173`. Sign in with two separate accounts.

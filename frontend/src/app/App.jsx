@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import { appConfig } from '../config/appConfig'
-import { changePassword, createProblem, createPvpRoom, createTestCase, createTopic, getActivity, getBadges, getCurrentUser, getLeaderboard, getOpenPvpRooms, getProblems, getPvpRoom, getRoadmaps, getSubmission, getSubmissions, getTopics, joinPvpRoom, login, logout, register, requestPasswordReset, resetPassword, runCode, startPvpRoom, submitPvpCode, submitSolution, updateProfile } from '../services/api/endpoints'
+import { API_URL, changePassword, createProblem, createPvpRoom, createTestCase, createTopic, getActivity, getBadges, getCurrentUser, getLeaderboard, getOpenPvpRooms, getProblems, getPvpRoom, getRoadmaps, getSubmission, getSubmissions, getTopics, joinPvpRoom, login, logout, register, requestPasswordReset, resetPassword, runCode, startPvpRoom, submitPvpCode, submitSolution, updateProfile } from '../services/api/endpoints'
 import { getItem, removeItem, setItem } from '../services/storage/localStorage'
 import { subscribeToPvpRoom } from '../services/pvp/pvpSocket'
 import { subscribeToSubmission } from '../services/submissions/submissionSocket'
+import AdminUsersPanel from '../features/admin/components/AdminUsersPanel.jsx'
+import '../styles/dashboard.css'
 
 function Icon({ children }) {
   return <span className="icon" aria-hidden="true">{children}</span>
@@ -16,12 +18,22 @@ function UserAvatar({ user, className = 'avatar avatar-violet' }) {
     : <div className={className}>{user.username.slice(0, 2).toUpperCase()}</div>
 }
 
-const starterCode = 'import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int a = sc.nextInt();\n        int b = sc.nextInt();\n        System.out.println(a + b);\n        sc.close();\n    }\n}'
+const starterCode = 'import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        // TODO: Read the input and implement your solution.\n        scanner.close();\n    }\n}'
 const starterTemplates = {
   java: starterCode,
   cpp: '#include <iostream>\nusing namespace std;\n\nint main() {\n    // Write your solution here\n    return 0;\n}',
   python: 'def solve():\n    # Write your solution here\n    pass\n\nif __name__ == "__main__":\n    solve()',
   javascript: 'function solve() {\n  // Write your solution here\n}\n\nsolve();',
+}
+const javaStarterVersion = 3
+
+function getSolverDraftKey(problemId, language) {
+  const draftLanguage = language === 'java' ? `java_v${javaStarterVersion}` : language
+  return `${appConfig.draftStoragePrefix}${problemId}_${draftLanguage}`
+}
+
+function getSolverDraft(problemId, language) {
+  return getItem(getSolverDraftKey(problemId, language)) || starterTemplates[language]
 }
 const pvpTemplates = {
   twoSum: {
@@ -202,6 +214,15 @@ function SplashScreen() {
   )
 }
 
+function getAuthRequestErrorMessage(error, fallback) {
+  if (!error?.response && (error?.request || error?.code === 'ERR_NETWORK')) {
+    return `Cannot reach the API at ${API_URL}. Check that the backend is running, VITE_API_URL is correct, and CORS_ALLOWED_ORIGIN includes this page's address.`
+  }
+
+  const fieldErrors = Object.values(error?.response?.data?.fieldErrors || {})
+  return fieldErrors[0] || error?.response?.data?.message || fallback
+}
+
 function AuthScreen({ mode, setMode, onAuthenticated }) {
   const [form, setForm] = useState({ username: '', email: '', password: '' })
   const [view, setView] = useState(mode)
@@ -243,9 +264,9 @@ function AuthScreen({ mode, setMode, onAuthenticated }) {
         onAuthenticated(user)
       }
     } catch (requestError) {
-      setError(view === 'verify'
+      setError(view === 'verify' && requestError.response?.status === 400
         ? 'That code is invalid or expired. Check it and try again, or request a new code.'
-        : requestError.response?.data?.message || requestError.message || 'We could not complete that request. Please try again.')
+        : getAuthRequestErrorMessage(requestError, 'We could not complete that request. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -280,8 +301,8 @@ function AuthScreen({ mode, setMode, onAuthenticated }) {
           <p className="muted">{isForgot ? 'Enter your account email and we will send a 6-digit code.' : isVerify ? `Enter the code sent to ${form.email}, then choose a new password.` : isLogin ? 'Your next level is waiting.' : 'Create your profile and earn your first XP.'}</p>
           <form onSubmit={handleSubmit}>
             {isRegister && <input name="username" placeholder="Username" value={form.username} onChange={handleChange} required minLength="3" />}
-            {(isLogin || isRegister || isForgot) && <input name="email" type="email" placeholder="Email address" value={form.email} onChange={handleChange} required />}
-            {isLogin && <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required minLength="8" />}
+            {(isLogin || isRegister || isForgot) && <input name="email" type="email" placeholder="Email address" autoComplete="email" value={form.email} onChange={handleChange} required />}
+            {(isLogin || isRegister) && <input name="password" type="password" placeholder="Password (8+ characters)" autoComplete={isRegister ? 'new-password' : 'current-password'} value={form.password} onChange={handleChange} required minLength="8" maxLength="72" />}
             {isVerify && <>
               <input type="text" inputMode="numeric" autoComplete="one-time-code" placeholder="6-digit email code" value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} required pattern="[0-9]{6}" maxLength="6" />
               <input type="password" placeholder="New password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required minLength="8" maxLength="72" autoComplete="new-password" />
@@ -304,12 +325,13 @@ function AuthScreen({ mode, setMode, onAuthenticated }) {
                 setConfirmPassword('')
                 setNotice('If an account exists for that email, a new 6-digit code has been sent.')
               } catch (requestError) {
-                setError(requestError.response?.data?.message || 'We could not send a new code. Please try again.')
+                setError(getAuthRequestErrorMessage(requestError, 'We could not send a new code. Please try again.'))
               } finally {
                 setLoading(false)
               }
             }} disabled={loading}>Resend code</button>
           </>}
+          {(isForgot || isVerify) && <p className="auth-note">Didn't receive a code? Check your spam folder. In local development, confirm Mailpit or your configured SMTP service is running.</p>}
           {error && <p className="auth-error" role="alert">{error}</p>}
           {notice && <p className="auth-success" role="status">{notice}</p>}
           {!isForgot && !isVerify && <small className="auth-note">By continuing, you agree to the guild rules and privacy policy.</small>}
@@ -319,7 +341,7 @@ function AuthScreen({ mode, setMode, onAuthenticated }) {
   )
 }
 
-function ChallengesView({ topics, problems, loading, onTopicChange, onSelectProblem }) {
+function ChallengesView({ topics, problems, loading, error, onRetry, onTopicChange, onSelectProblem }) {
   const [query, setQuery] = useState('')
   const [difficulty, setDifficulty] = useState('ALL')
   const filteredProblems = problems.filter((problem) => {
@@ -332,32 +354,28 @@ function ChallengesView({ topics, problems, loading, onTopicChange, onSelectProb
     <div className="challenges-view">
       <div className="challenge-heading"><div><p className="eyebrow">THE TRAINING GROUNDS</p><h1>Choose your next <span>challenge.</span></h1><p className="muted">Sharpen your instincts with focused problems built for real progress.</p></div><div className="challenge-count"><strong>{problems.length}</strong><small>available quests</small></div></div>
       <div className="challenge-toolbar"><div className="search-box">⌕<input placeholder="Search challenges..." value={query} onChange={(event) => setQuery(event.target.value)} /></div><select onChange={(event) => onTopicChange(event.target.value)} defaultValue=""><option value="">All topics</option>{topics.map((topic) => <option value={topic.id} key={topic.id}>{topic.name}</option>)}</select><div className="difficulty-tabs">{['ALL', 'EASY', 'MEDIUM', 'HARD'].map((level) => <button className={difficulty === level ? 'selected' : ''} onClick={() => setDifficulty(level)} key={level}>{level}</button>)}</div></div>
-        {loading ? <div className="empty-state">Loading your next quests...</div> : filteredProblems.length === 0 ? <div className="empty-state">No challenges match your current filters.</div> : <div className="challenge-list">{filteredProblems.map((problem, index) => <article className="challenge-card" key={problem.id}><div className="challenge-number">{String(index + 1).padStart(2, '0')}</div><div className="challenge-main"><div className="challenge-tags"><span className={`difficulty ${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span><span>+{problem.xpReward} XP</span></div><h3>{problem.title}</h3><p>{problem.description}</p><div className="challenge-meta"><span>◈ Problem #{problem.id}</span><span>⌁ Ready to solve</span></div></div><button className="solve-button" onClick={() => onSelectProblem(problem)}>Solve quest <span>→</span></button></article>)}</div>}
+        {loading ? <div className="empty-state">Loading your next quests...</div> : error ? <div className="empty-state" role="alert">{error}<button className="primary-button challenge-retry" type="button" onClick={onRetry}>Try again</button></div> : filteredProblems.length === 0 ? <div className="empty-state">No challenges match your current filters.</div> : <div className="challenge-list">{filteredProblems.map((problem, index) => <article className="challenge-card" key={problem.id}><div className="challenge-number">{String(index + 1).padStart(2, '0')}</div><div className="challenge-main"><div className="challenge-tags"><span className={`difficulty ${problem.difficulty.toLowerCase()}`}>{problem.difficulty}</span><span>+{problem.xpReward} XP</span></div><h3>{problem.title}</h3><p>{problem.description}</p><div className="challenge-meta"><span>◈ Problem #{problem.id}</span><span>⌁ Ready to solve</span></div></div><button className="solve-button" onClick={() => onSelectProblem(problem)}>Solve quest <span>→</span></button></article>)}</div>}
     </div>
   )
 }
 
 function SolverView({ problem, onBack, onSubmissionUpdated }) {
     const [language, setLanguage] = useState('java')
-    const [code, setCode] = useState(() => {
-      const draft = getItem(`${appConfig.draftStoragePrefix}${problem.id}_java`) || getItem(`${appConfig.draftStoragePrefix}${problem.id}`)
-      return draft === starterCode ? '' : draft || ''
-    })
+    const [code, setCode] = useState(() => getSolverDraft(problem.id, 'java'))
     const [customInput, setCustomInput] = useState('')
     const [output, setOutput] = useState('')
     const [status, setStatus] = useState('')
     const [running, setRunning] = useState(false)
 
     useEffect(() => {
-      setItem(`${appConfig.draftStoragePrefix}${problem.id}_${language}`, code)
+      setItem(getSolverDraftKey(problem.id, language), code)
     }, [code, language, problem.id])
 
     const handleLanguageChange = (nextLanguage) => {
       if (nextLanguage === language) return
       if (code.trim() && !window.confirm('Changing languages will replace the current editor contents with a starter template. Continue?')) return
       setLanguage(nextLanguage)
-      const savedDraft = getItem(`${appConfig.draftStoragePrefix}${problem.id}_${nextLanguage}`)
-      setCode(savedDraft || starterTemplates[nextLanguage])
+      setCode(getSolverDraft(problem.id, nextLanguage))
       setOutput('')
       setStatus('')
     }
@@ -925,6 +943,7 @@ function AdminView({ topics, problems, onDataChanged }) {
       {message && <p className="settings-message">{message}</p>}
       {error && <p className="auth-error">{error}</p>}
       <div className="admin-summary"><div className="panel admin-stat"><span>TOPICS</span><strong>{topics.length}</strong><small>content paths</small></div><div className="panel admin-stat"><span>PROBLEMS</span><strong>{problems.length}</strong><small>published quests</small></div><div className="panel admin-stat"><span>ACCESS</span><strong>ADMIN</strong><small>protected workspace</small></div></div>
+      <AdminUsersPanel />
       <div className="admin-grid">
         <section className="panel settings-card"><p className="eyebrow">CONTENT</p><h3>Create topic</h3><form onSubmit={(event) => { event.preventDefault(); submit(() => createTopic(topic), () => setTopic({ name: '', description: '' })) }}><input placeholder="Topic name" value={topic.name} onChange={(event) => setTopic({ ...topic, name: event.target.value })} required /><textarea placeholder="Description" value={topic.description} onChange={(event) => setTopic({ ...topic, description: event.target.value })} /><button className="primary-button">Create topic</button></form></section>
         <section className="panel settings-card"><p className="eyebrow">CONTENT</p><h3>Create problem</h3><form onSubmit={(event) => { event.preventDefault(); submit(() => createProblem({ ...problem, topicId: Number(problem.topicId), xpReward: Number(problem.xpReward) }), () => setProblem({ title: '', description: '', difficulty: 'EASY', constraints: '', xpReward: 25, topicId: '' })) }}><input placeholder="Problem title" value={problem.title} onChange={(event) => setProblem({ ...problem, title: event.target.value })} required /><textarea placeholder="Description" value={problem.description} onChange={(event) => setProblem({ ...problem, description: event.target.value })} required /><select value={problem.difficulty} onChange={(event) => setProblem({ ...problem, difficulty: event.target.value })}><option>EASY</option><option>MEDIUM</option><option>HARD</option></select><input placeholder="XP reward" type="number" min="1" value={problem.xpReward} onChange={(event) => setProblem({ ...problem, xpReward: event.target.value })} required /><select value={problem.topicId} onChange={(event) => setProblem({ ...problem, topicId: event.target.value })} required><option value="">Select topic</option>{topics.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select><textarea placeholder="Constraints (optional)" value={problem.constraints} onChange={(event) => setProblem({ ...problem, constraints: event.target.value })} /><button className="primary-button">Create problem</button></form></section>
@@ -980,6 +999,8 @@ function App() {
   const [topics, setTopics] = useState([])
   const [problems, setProblems] = useState([])
   const [problemsLoading, setProblemsLoading] = useState(false)
+  const [problemsError, setProblemsError] = useState('')
+  const [selectedTopicId, setSelectedTopicId] = useState('')
   const [selectedProblem, setSelectedProblem] = useState(null)
   const [badges, setBadges] = useState([])
   const [activity, setActivity] = useState([])
@@ -1085,16 +1106,21 @@ function App() {
 
   useEffect(() => {
     if (!sessionUser || !['Challenges', 'PvP', 'Admin', 'Profile'].includes(activeNav)) return
+    let cancelled = false
     Promise.all([getTopics(), getProblems()])
       .then(([topicData, problemData]) => {
+        if (cancelled) return
         setTopics(topicData)
         setProblems(problemData)
-      })
-      .catch(() => {
+      }).catch((requestError) => {
+        if (cancelled) return
         setTopics([])
         setProblems([])
+        setProblemsError(requestError.response?.data?.message || 'Challenges could not be loaded. Please try again.')
+      }).finally(() => {
+        if (!cancelled) setProblemsLoading(false)
       })
-      .finally(() => setProblemsLoading(false))
+    return () => { cancelled = true }
   }, [activeNav, sessionUser])
 
   if (booting) {
@@ -1138,7 +1164,11 @@ function App() {
   const navigateTo = (destination) => {
     setSelectedProblem(null)
     setProfileMenuOpen(false)
-    if (destination === 'Challenges' || destination === 'PvP') setProblemsLoading(true)
+    if (destination === 'Challenges' || destination === 'PvP' || destination === 'Admin') {
+      setProblemsLoading(true)
+      setProblemsError('')
+    }
+    if (destination === 'Challenges') setSelectedTopicId('')
     setActiveNav(destination)
     if (destination === 'Profile' || destination === 'Activity') {
       refreshActivity()
@@ -1157,6 +1187,20 @@ function App() {
       setMessage('Could not refresh your profile right now.')
     }
 
+  }
+
+  const loadProblemsForTopic = async (topicId) => {
+    setSelectedTopicId(topicId || '')
+    setProblemsLoading(true)
+    setProblemsError('')
+    try {
+      setProblems(await getProblems(topicId || undefined))
+    } catch (requestError) {
+      setProblems([])
+      setProblemsError(requestError.response?.data?.message || 'Challenges could not be loaded. Please try again.')
+    } finally {
+      setProblemsLoading(false)
+    }
   }
 
   const toggleFeaturedBadge = (badgeCode) => {
@@ -1206,14 +1250,10 @@ function App() {
     }))
   const acceptedSubmissions = submissions.filter((submission) => submission.status === 'ACCEPTED')
   const featuredBadges = badges.filter((badge) => featuredBadgeCodes.includes(badge.code)).slice(0, 3)
-  const today = toLocalDateKey()
-  const solvedToday = submissions.some((submission) => submission.status === 'ACCEPTED' && toLocalDateKey(submission.submittedAt) === today)
   const completionRate = submissions.length ? Math.round((acceptedSubmissions.length / submissions.length) * 100) : 0
-  const dashboardQuests = [
-    { title: 'Complete a daily challenge', meta: solvedToday ? 'Complete for today' : 'Not completed today', reward: '+25 XP', progress: solvedToday ? 100 : 0, icon: '⚔' },
-    { title: 'Keep your streak alive', meta: `${sessionUser.currentStreak || 0} day streak`, reward: '+15 XP', progress: Math.min(100, ((sessionUser.currentStreak || 0) / 7) * 100), icon: '🔥' },
-    { title: 'Build your XP reserve', meta: `${sessionUser.xp || 0} XP earned`, reward: '+40 XP', progress: Math.min(100, ((sessionUser.xp || 0) / 100) * 100), icon: '◈' },
-  ]
+  const recentDashboardSubmissions = [...submissions]
+    .sort((left, right) => new Date(right.submittedAt) - new Date(left.submittedAt))
+    .slice(0, 3)
   const labels = shellLabels[preferences.language] || shellLabels.en
 
   return (
@@ -1287,7 +1327,7 @@ function App() {
         </header>
 
         <div className="content-wrap">
-          {selectedProblem ? <SolverView key={selectedProblem.id} problem={selectedProblem} onBack={() => navigateTo('Challenges')} onSubmissionUpdated={handleSubmissionUpdated} /> : activeNav === 'Challenges' ? <ChallengesView topics={topics} problems={problems} loading={problemsLoading} onSelectProblem={setSelectedProblem} onTopicChange={(topicId) => { setProblemsLoading(true); getProblems(topicId).then(setProblems).catch(() => setProblems([])).finally(() => setProblemsLoading(false)) }} /> : activeNav === 'PvP' ? <PvpView problems={problems} problemsLoading={problemsLoading} currentUser={sessionUser} onUserUpdate={setSessionUser} /> : activeNav === 'Leaderboard' ? <LeaderboardView entries={leaderboardData} currentUser={sessionUser} /> : activeNav === 'Achievements' ? <AchievementsView badges={badges} featuredCodes={featuredBadgeCodes} onToggleFeatured={toggleFeaturedBadge} currentUser={sessionUser} submissions={submissions} /> : activeNav === 'Profile' ? <ProfileView currentUser={sessionUser} badges={badges} featuredBadges={featuredBadges} submissions={submissions} activity={activity} leaderboardData={leaderboardData} problems={problems} onUserUpdated={setSessionUser} onBadgeClick={setBadgeToReveal} /> : activeNav === 'Activity' ? <ActivityView activity={activity} currentUser={sessionUser} loading={activityLoading} error={activityError} onRetry={refreshActivity} /> : activeNav === 'Roadmaps' ? <RoadmapsView roadmaps={roadmaps} loading={roadmapsLoading} error={roadmapsError} onOpenChallenges={() => navigateTo('Challenges')} /> : activeNav === 'Settings' ? <SettingsView currentUser={sessionUser} preferences={preferences} onPreferencesChange={(changes) => setPreferences((current) => ({ ...current, ...changes }))} onUserUpdated={setSessionUser} /> : activeNav === 'Admin' && sessionUser.role === 'ADMIN' ? <AdminView topics={topics} problems={problems} onDataChanged={() => { getTopics().then(setTopics); getProblems().then(setProblems) }} /> : <>
+          {selectedProblem ? <SolverView key={`${selectedProblem.id}-java-v${javaStarterVersion}`} problem={selectedProblem} onBack={() => navigateTo('Challenges')} onSubmissionUpdated={handleSubmissionUpdated} /> : activeNav === 'Challenges' ? <ChallengesView topics={topics} problems={problems} loading={problemsLoading} error={problemsError} onRetry={() => loadProblemsForTopic(selectedTopicId)} onSelectProblem={setSelectedProblem} onTopicChange={loadProblemsForTopic} /> : activeNav === 'PvP' ? <PvpView problems={problems} problemsLoading={problemsLoading} currentUser={sessionUser} onUserUpdate={setSessionUser} /> : activeNav === 'Leaderboard' ? <LeaderboardView entries={leaderboardData} currentUser={sessionUser} /> : activeNav === 'Achievements' ? <AchievementsView badges={badges} featuredCodes={featuredBadgeCodes} onToggleFeatured={toggleFeaturedBadge} currentUser={sessionUser} submissions={submissions} /> : activeNav === 'Profile' ? <ProfileView currentUser={sessionUser} badges={badges} featuredBadges={featuredBadges} submissions={submissions} activity={activity} leaderboardData={leaderboardData} problems={problems} onUserUpdated={setSessionUser} onBadgeClick={setBadgeToReveal} /> : activeNav === 'Activity' ? <ActivityView activity={activity} currentUser={sessionUser} loading={activityLoading} error={activityError} onRetry={refreshActivity} /> : activeNav === 'Roadmaps' ? <RoadmapsView roadmaps={roadmaps} loading={roadmapsLoading} error={roadmapsError} onOpenChallenges={() => navigateTo('Challenges')} /> : activeNav === 'Settings' ? <SettingsView currentUser={sessionUser} preferences={preferences} onPreferencesChange={(changes) => setPreferences((current) => ({ ...current, ...changes }))} onUserUpdated={setSessionUser} /> : activeNav === 'Admin' && sessionUser.role === 'ADMIN' ? <AdminView topics={topics} problems={problems} onDataChanged={() => { getTopics().then(setTopics); getProblems().then(setProblems) }} /> : <>
           <section className="welcome-row">
             <div>
               <p className="eyebrow">{new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(new Date()).toUpperCase()}</p>
@@ -1328,15 +1368,15 @@ function App() {
 
           <div className="dashboard-grid">
             <section className="panel quests-panel">
-              <div className="panel-heading"><div><p className="eyebrow">DAILY OBJECTIVES</p><h3>Active quests</h3></div><button className="link-button" onClick={() => navigateTo('Challenges')}>View all <span>→</span></button></div>
+              <div className="panel-heading"><div><p className="eyebrow">CODING HISTORY</p><h3>Recent submissions</h3></div><button className="link-button" onClick={() => navigateTo('Challenges')}>Practice now <span>→</span></button></div>
               <div className="quest-list">
-                {dashboardQuests.map((quest) => (
-                  <div className="quest-row" key={quest.title}>
-                    <div className="quest-icon">{quest.icon}</div>
-                    <div className="quest-info"><strong>{quest.title}</strong><small>{quest.meta}</small><div className="progress-track"><i style={{ width: `${quest.progress}%` }} /></div></div>
-                    <span className="xp-reward">{quest.reward}</span>
+                {recentDashboardSubmissions.length ? recentDashboardSubmissions.map((submission) => (
+                  <div className="quest-row" key={submission.id}>
+                    <div className="quest-icon">⌘</div>
+                    <div className="quest-info"><strong>Problem #{submission.problemId}</strong><small>{submission.language} · {new Date(submission.submittedAt).toLocaleString()}</small></div>
+                    <span className={`recent-submission-status status-${submission.status.toLowerCase()}`}>{submission.status.replaceAll('_', ' ')}</span>
                   </div>
-                ))}
+                )) : <div className="empty-state compact-empty">No submissions yet. Your coding activity will appear here.</div>}
               </div>
             </section>
 

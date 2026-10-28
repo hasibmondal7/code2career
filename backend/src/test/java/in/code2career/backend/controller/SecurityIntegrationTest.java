@@ -9,6 +9,7 @@ import in.code2career.backend.repository.ProblemRepository;
 import in.code2career.backend.repository.TestCaseRepository;
 import in.code2career.backend.repository.TopicRepository;
 import in.code2career.backend.repository.UserRepository;
+import in.code2career.backend.service.AdminUserService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,13 +29,17 @@ import org.mockito.ArgumentCaptor;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.time.LocalDate;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.any;
@@ -52,6 +58,12 @@ class SecurityIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AdminUserService adminUserService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private TopicRepository topicRepository;
@@ -95,6 +107,79 @@ class SecurityIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void regularUserCannotAccessAdminUserManagement() throws Exception {
+        mockMvc.perform(get("/api/admin/users")
+                        .with(user("regular-user").roles("USER")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Transactional
+    void administratorCanSearchAndFilterUserAccounts() throws Exception {
+        userRepository.saveAndFlush(User.builder()
+                .username("admin-directory-test")
+                .email("admin-directory-test@example.invalid")
+                .password(passwordEncoder.encode("test-password-123"))
+                .active(true)
+                .build());
+
+        mockMvc.perform(get("/api/admin/users")
+                        .param("query", "admin-directory-test")
+                        .with(user("admin-user").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].email").value("admin-directory-test@example.invalid"))
+                .andExpect(jsonPath("$.content[0].active").value(true));
+
+        mockMvc.perform(get("/api/admin/users")
+                        .param("query", "admin-directory-test")
+                        .param("active", "true")
+                        .with(user("admin-user").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @Transactional
+    void inactiveAccountCannotLogIn() throws Exception {
+        String email = "inactive-login-test@example.invalid";
+        userRepository.saveAndFlush(User.builder()
+                .username("inactive-login-test")
+                .email(email)
+                .password(passwordEncoder.encode("valid-password-123"))
+                .active(false)
+                .build());
+
+        mockMvc.perform(post("/api/users/login")
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"inactive-login-test@example.invalid","password":"valid-password-123"}
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @Transactional
+    void deletingAccountRemovesUserOwnedActivity() {
+        User user = userRepository.saveAndFlush(User.builder()
+                .username("admin-delete-test")
+                .email("admin-delete-test@example.invalid")
+                .password(passwordEncoder.encode("test-password-123"))
+                .build());
+        jdbcTemplate.update("""
+                INSERT INTO user_activity (user_id, activity_date, problems_solved, accepted_submissions, xp_earned)
+                VALUES (?, ?, 1, 1, 25)
+                """, user.getId(), LocalDate.now());
+
+        adminUserService.deleteUser(user.getId());
+        userRepository.flush();
+
+        Assertions.assertFalse(userRepository.existsById(user.getId()));
+        Assertions.assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM user_activity WHERE user_id = ?", Integer.class, user.getId()));
     }
 
     @Test
@@ -165,6 +250,16 @@ class SecurityIntegrationTest {
                                 """))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
+    }
+
+    @Test
+    void passwordResetSupportsLocalhostIpOrigin() throws Exception {
+        mockMvc.perform(options("/api/users/password-reset/request")
+                        .header(HttpHeaders.ORIGIN, "http://127.0.0.1:5173")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "content-type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://127.0.0.1:5173"));
     }
 
     @Test

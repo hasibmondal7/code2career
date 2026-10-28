@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService {
     public String verifyLogin(LoginDto loginDto) {
         User user = userRepository.findByEmailIgnoreCase(loginDto.getEmail().trim());
 
-        if (user != null && passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
+        if (user != null && user.isActive() && passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
             return jwtUtil.generateToken(user.getEmail(), user.getTokenVersion());
         }
 

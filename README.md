@@ -49,7 +49,7 @@ Students can create and manage their Code2Career account.
 - Register
 - Login / Logout
 - Forgot Password
-- Email Verification
+- Email Verification _(planned)_
 - Password Management
 - Profile Management
 - Social Login _(planned)_
@@ -57,6 +57,8 @@ Students can create and manage their Code2Career account.
 Password-reset OTP emails require SMTP configuration in the deployment environment. Set `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM`, and, when required by the provider, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_SMTP_AUTH=true`, and `MAIL_SMTP_STARTTLS=true`. For Gmail, enable 2-Step Verification, create a Google App Password, then use `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587`, `MAIL_USERNAME=your Gmail address`, `MAIL_PASSWORD=your 16-character App Password`, `MAIL_SMTP_AUTH=true`, `MAIL_SMTP_STARTTLS=true`, and `MAIL_FROM=your Gmail address`. Never use your regular Gmail password. OTPs expire after `PASSWORD_RESET_CODE_EXPIRATION_MINUTES` (10 minutes by default) and allow at most five attempts.
 
 For local demos, start Mailpit with `docker compose --profile local up -d mailpit`; view captured OTP emails at `http://localhost:8025`. When running the backend directly from the IDE, use `MAIL_HOST=localhost`, `MAIL_PORT=1025`, with SMTP authentication and TLS disabled.
+
+If an authentication form cannot reach the API, confirm the backend is running at `VITE_API_URL` (defaults to `http://localhost:8080`) and that `CORS_ALLOWED_ORIGIN` exactly matches the frontend origin. For local development, both `http://localhost:5173` and `http://127.0.0.1:5173` are allowed by default. A browser reports a CORS rejection as a generic network error.
 
 ## Production deployment
 
@@ -66,6 +68,22 @@ For local demos, start Mailpit with `docker compose --profile local up -d mailpi
 4. Check `https://your-api-domain/actuator/health` after deployment. Swagger and OpenAPI endpoints are disabled in the Compose production configuration.
 
 Set `JWT_SECRET` to a cryptographically random value of at least 32 bytes before starting the backend. The application intentionally refuses to start without it rather than using a predictable development secret.
+
+## Development data reset and initial administrator
+
+The optional bootstrap runs only with the `dev` or `dev-reset` Spring profile. Set `APP_BOOTSTRAP_ADMIN_EMAIL`, `APP_BOOTSTRAP_ADMIN_USERNAME`, and `APP_BOOTSTRAP_ADMIN_PASSWORD` in the local process environment; use a unique email and an 8–72-byte password. The password is stored with the configured BCrypt encoder. Re-running bootstrap does not create duplicates or promote an existing regular account. The application has stateless JWT authentication, so changing a password or deleting an account invalidates its tokens; there is no separate server-side session table.
+
+For a disposable local reset, create a separate PostgreSQL database named `code2career_dev` and back it up first with `pg_dump -h localhost -U postgres -d code2career_dev -Fc -f code2career_dev-before-reset.dump`. The reset is restricted to that database on `localhost`/`127.0.0.1`; it deletes rows from `users`, `password_reset_tokens`, `user_badges`, `user_activity`, `roadmap_progress`, `pvp_rooms`, `pvp_room_players`, and `submissions`, sets `topics.admin_id` and `problems.admin_id` to `NULL`, and resets the users sequence. It preserves Flyway history and catalog content such as topics, problems, roadmaps, badges, and test cases. The reset is never run automatically: set `APP_DATA_RESET_ENABLED=true`, set `APP_DATA_RESET_CONFIRMATION=RESET_CODE2CAREER_DEVELOPMENT_DATA`, and explicitly pass `--app.data-reset.execute=true` to one `dev-reset` launch. For example, from `backend` after setting the local environment variables:
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE = 'dev-reset'
+$env:DB_URL = 'jdbc:postgresql://localhost:5432/code2career_dev'
+$env:APP_DATA_RESET_ENABLED = 'true'
+$env:APP_DATA_RESET_CONFIRMATION = 'RESET_CODE2CAREER_DEVELOPMENT_DATA'
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.arguments=--app.data-reset.execute=true'
+```
+
+The first admin is created after that reset when the three `APP_BOOTSTRAP_ADMIN_*` values are set. `backend/development.env.example` lists the variable names with placeholders. Do not put real passwords in that file or commit a filled-in environment file; provide credentials through a local secret manager or a short-lived shell environment, then unset them after startup. Do not activate `dev-reset` against a shared or production database.
 
 ---
 

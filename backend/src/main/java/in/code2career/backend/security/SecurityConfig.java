@@ -1,6 +1,8 @@
 package in.code2career.backend.security;
 
 import in.code2career.backend.config.JwtProperties;
+import in.code2career.backend.config.BootstrapProperties;
+import in.code2career.backend.config.DataResetProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -23,7 +25,7 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, BootstrapProperties.class, DataResetProperties.class})
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
@@ -73,7 +75,7 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
-            @Value("${app.cors.allowed-origin:http://localhost:5173}") String allowedOrigin
+            @Value("${app.cors.allowed-origin:http://localhost:5173,http://127.0.0.1:5173}") String allowedOrigin
     ) {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(

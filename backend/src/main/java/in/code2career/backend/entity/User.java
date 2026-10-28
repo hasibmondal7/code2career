@@ -61,6 +61,10 @@ public class User {
     @Builder.Default
     private Integer tokenVersion = 0;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean active = true;
+
     @Column(name = "last_active_date")
     private LocalDate lastActiveDate;
 

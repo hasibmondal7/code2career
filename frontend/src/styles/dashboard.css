@@ -1,0 +1,29 @@
+.challenge-retry {
+  margin-top: 12px;
+}
+
+.recent-submission-status {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.recent-submission-status.status-accepted {
+  border-color: rgba(121, 226, 167, .25);
+  color: var(--green);
+}
+
+.recent-submission-status.status-error,
+.recent-submission-status.status-rejected {
+  border-color: rgba(255, 159, 103, .25);
+  color: var(--orange);
+}
+
+@media (max-width: 560px) {
+  .recent-submission-status {
+    display: none;
+  }
+}
